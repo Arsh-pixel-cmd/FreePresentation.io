@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, DM_Mono, DM_Serif_Display } from "next/font/google";
 import "./globals.css";
-import LenisProvider from "@/components/ui/LenisProvider";
+import LenisProvider from "@/providers/LenisProvider";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
