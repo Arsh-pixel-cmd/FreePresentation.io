@@ -1,0 +1,66 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+web_modules/
+
+# Next.js build and export outputs
+.next/
+out/
+build/
+dist/
+
+# Debug and log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+*.log
+
+# Local environment files (containing sensitive tokens/keys)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Sentry command-line client configuration (often contains auth token)
+.sentryclirc
+
+# Vercel deployment cache and config
+.vercel
+
+# Testing
+/coverage
+.nyc_output
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.project
+.classpath
+.settings/
+.vscode-test/
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# TypeScript compiler info
+*.tsbuildinfo
+
+# Unrelated and temporary workspace folders
+/mnt/
+.gemini/

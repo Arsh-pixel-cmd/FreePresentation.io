@@ -1,0 +1,66 @@
+import { SlideTheme, ThemeId } from '@/types/presentation'
+
+export const THEMES: Record<ThemeId, SlideTheme> = {
+  obsidian: {
+    id: 'obsidian',
+    name: 'Obsidian',
+    bg: '#0a0a0a',
+    surface: '#111111',
+    text: '#f5f5f5',
+    accent: '#6366f1',
+    muted: '#71717a',
+    border: '#27272a',
+  },
+  arctic: {
+    id: 'arctic',
+    name: 'Arctic',
+    bg: '#f8fafc',
+    surface: '#ffffff',
+    text: '#0f172a',
+    accent: '#0ea5e9',
+    muted: '#64748b',
+    border: '#e2e8f0',
+  },
+  aurora: {
+    id: 'aurora',
+    name: 'Aurora',
+    bg: '#0f0c29',
+    surface: '#1a1545',
+    text: '#f0eeff',
+    accent: '#a78bfa',
+    muted: '#7c6fcd',
+    border: '#2d2760',
+  },
+  ember: {
+    id: 'ember',
+    name: 'Ember',
+    bg: '#0f0700',
+    surface: '#1c0f02',
+    text: '#fef3e2',
+    accent: '#f97316',
+    muted: '#a16207',
+    border: '#292010',
+  },
+  sage: {
+    id: 'sage',
+    name: 'Sage',
+    bg: '#f0fdf4',
+    surface: '#ffffff',
+    text: '#052e16',
+    accent: '#16a34a',
+    muted: '#4b7c5e',
+    border: '#bbf7d0',
+  },
+  slate: {
+    id: 'slate',
+    name: 'Slate',
+    bg: '#0d1117',
+    surface: '#161b22',
+    text: '#e6edf3',
+    accent: '#38bdf8',
+    muted: '#8b949e',
+    border: '#21262d',
+  },
+}
+
+export const THEME_LIST = Object.values(THEMES)
