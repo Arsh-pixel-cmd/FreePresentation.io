@@ -2,7 +2,7 @@ import { Redis } from "@upstash/redis";
 import { Client as QStashClient } from "@upstash/qstash";
 
 const hasRedisConfig = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
-const hasQStashConfig = !!process.env.QStASH_TOKEN;
+const hasQStashConfig = !!process.env.QSTASH_TOKEN;
 
 export const redis = hasRedisConfig
   ? new Redis({

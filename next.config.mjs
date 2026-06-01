@@ -53,6 +53,16 @@ const nextConfig = {
     ];
   },
 
+  // Proxy requests for an external backend server
+  async rewrites() {
+    return [
+      {
+        source: "/api/external/:path*",
+        destination: `${process.env.EXTERNAL_BACKEND_URL || "http://localhost:8000"}/:path*`, // Proxy to Backend
+      },
+    ];
+  },
+
   // Increase serverless function timeout for PDF generation
   experimental: {
     serverComponentsExternalPackages: ["pdfjs-dist", "tesseract.js", "canvas"],
