@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 export interface AnnotationStroke {
   color: string;
@@ -33,7 +33,7 @@ export default function SlideAnnotationCanvas({
   }, [strokes]);
 
   // Redraw canvas whenever strokes change or window resizes
-  const draw = () => {
+  const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -67,13 +67,13 @@ export default function SlideAnnotationCanvas({
       }
       ctx.stroke();
     });
-  };
+  }, [localStrokes]);
 
   useEffect(() => {
     draw();
     window.addEventListener("resize", draw);
     return () => window.removeEventListener("resize", draw);
-  }, [localStrokes]);
+  }, [draw]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawingMode) return;
