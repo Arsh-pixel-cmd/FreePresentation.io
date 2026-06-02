@@ -75,46 +75,86 @@ export async function POST(req: NextRequest) {
     // Stage 3: Qwen / Gemini Multimodal OCR Fallback
     if (!extractedText.trim()) {
       try {
-        console.log("[OCR Pipeline] Stage 3: Attempting Multimodal Gemini (Qwen-level) OCR...");
-        if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== "your_gemini_api_key_here") {
-          const base64PDF = buffer.toString("base64");
-          const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        const base64PDF = buffer.toString("base64");
+
+        // 3a. Direct Qwen OCR via DashScope API
+        if (process.env.DASHSCOPE_API_KEY && process.env.DASHSCOPE_API_KEY !== "your_dashscope_key_here") {
+          console.log("[OCR Pipeline] Stage 3: Attempting direct Qwen-VL OCR...");
+          const qwenRes = await fetch(
+            "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Authorization": `Bearer ${process.env.DASHSCOPE_API_KEY}`,
+                "Content-Type": "application/json",
+              },
               body: JSON.stringify({
-                contents: [
-                  {
-                    parts: [
-                      {
-                        inlineData: {
-                          mimeType: "application/pdf",
-                          data: base64PDF,
-                        },
-                      },
-                      {
-                        text: "Extract all text and structure from this document. Provide only the extracted plain text with no formatting.",
-                      },
-                    ],
-                  },
-                ],
+                model: "qwen-vl-max",
+                input: {
+                  messages: [
+                    {
+                      role: "user",
+                      content: [
+                        { image: `data:application/pdf;base64,${base64PDF}` },
+                        { text: "Extract all text and structure from this document. Provide only the extracted plain text with no formatting." }
+                      ]
+                    }
+                  ]
+                }
               }),
             }
           );
-          if (geminiRes.ok) {
-            const data = await geminiRes.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            extractedText = text;
+          if (qwenRes.ok) {
+            const data = await qwenRes.json();
+            extractedText = data.output?.choices?.[0]?.message?.content?.[0]?.text || "";
             if (extractedText.trim()) {
-              methodUsed = "gemini_multimodal_ocr";
+              methodUsed = "qwen_ocr";
             }
           }
-        } else {
-          console.warn("[OCR Pipeline] Gemini API Key not found. Skipping Stage 3.");
         }
-      } catch (geminiOcrErr) {
-        console.error("[OCR Pipeline] Gemini Multimodal OCR failed:", geminiOcrErr);
+
+        // 3b. Fallback to Gemini Multimodal OCR
+        if (!extractedText.trim()) {
+          console.log("[OCR Pipeline] Stage 3: Attempting Multimodal Gemini (Qwen-level) OCR...");
+          if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== "your_gemini_api_key_here") {
+            const geminiRes = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  contents: [
+                    {
+                      parts: [
+                        {
+                          inlineData: {
+                            mimeType: "application/pdf",
+                            data: base64PDF,
+                          },
+                        },
+                        {
+                          text: "Extract all text and structure from this document. Provide only the extracted plain text with no formatting.",
+                        },
+                      ],
+                    },
+                  ],
+                }),
+              }
+            );
+            if (geminiRes.ok) {
+              const data = await geminiRes.json();
+              const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+              extractedText = text;
+              if (extractedText.trim()) {
+                methodUsed = "gemini_multimodal_ocr";
+              }
+            }
+          } else {
+            console.warn("[OCR Pipeline] Gemini API Key not found. Skipping Stage 3.");
+          }
+        }
+      } catch (ocrErr) {
+        console.error("[OCR Pipeline] Stage 3 OCR failed:", ocrErr);
       }
     }
 
