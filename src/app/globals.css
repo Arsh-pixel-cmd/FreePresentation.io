@@ -1,3 +1,5 @@
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,10 +7,11 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    @apply font-sans;
   }
 
   body {
-    @apply bg-surface text-cream font-sans antialiased overflow-x-hidden;
+    @apply font-sans antialiased overflow-x-hidden bg-background text-foreground;
   }
 
   ::selection {
@@ -31,6 +34,47 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-zinc-700;
+  }
+  .theme {
+    --font-heading: var(--font-sans);
+    --font-sans: var(--font-sans);
+  }
+  :root {
+    --background: oklch(0.13 0 0);
+    --foreground: oklch(0.91 0.01 74.3);
+    --card: oklch(0.15 0 0);
+    --card-foreground: oklch(0.91 0.01 74.3);
+    --popover: oklch(0.14 0 0);
+    --popover-foreground: oklch(0.91 0.01 74.3);
+    --primary: oklch(0.58 0.22 265);
+    --primary-foreground: oklch(0.98 0 0);
+    --secondary: oklch(0.18 0 0);
+    --secondary-foreground: oklch(0.91 0.01 74.3);
+    --muted: oklch(0.2 0 0);
+    --muted-foreground: oklch(0.7 0 0);
+    --accent: oklch(0.18 0 0);
+    --accent-foreground: oklch(0.91 0.01 74.3);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(1 0 0 / 8%);
+    --input: oklch(1 0 0 / 10%);
+    --ring: oklch(0.58 0.22 265);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.375rem;
+    --sidebar: oklch(0.15 0 0);
+    --sidebar-foreground: oklch(0.91 0.01 74.3);
+    --sidebar-primary: oklch(0.58 0.22 265);
+    --sidebar-primary-foreground: oklch(0.98 0 0);
+    --sidebar-accent: oklch(0.18 0 0);
+    --sidebar-accent-foreground: oklch(0.91 0.01 74.3);
+    --sidebar-border: oklch(1 0 0 / 8%);
+    --sidebar-ring: oklch(0.58 0.22 265);
+  }
+  * {
+    @apply border-border outline-ring/50;
   }
 }
 

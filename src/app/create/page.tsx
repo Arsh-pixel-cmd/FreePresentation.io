@@ -5,12 +5,13 @@ import { ThemeId } from "@/types/presentation";
 import { THEME_LIST } from "@/lib/themes/themes";
 import { usePresentationStore } from "@/store/presentationStore";
 
-type Tab = "prompt" | "upload" | "paste";
+type Tab = "prompt" | "upload" | "paste" | "url";
 
 const TAB_LABELS: Record<Tab, string> = {
   prompt: "Write a topic",
   upload: "Upload PDF",
   paste: "Paste text",
+  url: "Import URL",
 };
 
 const EXAMPLE_PROMPTS = [
@@ -35,19 +36,24 @@ export default function CreatePage() {
   const [tab, setTab] = useState<Tab>("prompt");
   const [prompt, setPrompt] = useState("");
   const [pasteText, setPasteText] = useState("");
+  const [urlInput, setUrlInput] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [themeId, setThemeId] = useState<ThemeId>("obsidian");
   const [loading, setLoading] = useState(false);
   const [loadStep, setLoadStep] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [audience, setAudience] = useState("General Public");
+  const [tone, setTone] = useState("Professional & Clean");
+  const [slideCount, setSlideCount] = useState(12);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleGenerate = useCallback(async () => {
     const hasInput =
       (tab === "prompt" && prompt.trim()) ||
       (tab === "paste" && pasteText.trim()) ||
-      (tab === "upload" && file);
+      (tab === "upload" && file) ||
+      (tab === "url" && urlInput.trim());
     if (!hasInput) return;
 
     setLoading(true);
@@ -61,6 +67,9 @@ export default function CreatePage() {
     try {
       const formData = new FormData();
       formData.append("themeId", themeId);
+      formData.append("audience", audience);
+      formData.append("tone", tone);
+      formData.append("slideCount", String(slideCount));
 
       if (tab === "prompt") {
         formData.append("mode", "prompt");
@@ -68,6 +77,17 @@ export default function CreatePage() {
       } else if (tab === "paste") {
         formData.append("mode", "paste");
         formData.append("text", pasteText);
+      } else if (tab === "url" && urlInput.trim()) {
+        setLoadStep(0);
+        const parseRes = await fetch("/api/parse/url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: urlInput }),
+        });
+        const parseData = await parseRes.json();
+        if (parseData.error) throw new Error(parseData.error);
+        formData.append("mode", "paste");
+        formData.append("text", parseData.text);
       } else if (tab === "upload" && file) {
         setLoadStep(0);
         const parseForm = new FormData();
@@ -97,7 +117,7 @@ export default function CreatePage() {
     } finally {
       clearInterval(interval);
     }
-  }, [tab, prompt, pasteText, file, themeId, savePresentation, setPresentation]);
+  }, [tab, prompt, pasteText, urlInput, file, themeId, savePresentation, setPresentation, audience, tone, slideCount]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -159,7 +179,7 @@ export default function CreatePage() {
           </h1>
 
           <div className="flex gap-0 border border-surface-border-light rounded-[3px] overflow-hidden mb-7 w-fit">
-            {(["prompt", "upload", "paste"] as Tab[]).map((t) => (
+            {(["prompt", "upload", "paste", "url"] as Tab[]).map((t) => (
               <button
                 key={t}
                 className={`bg-transparent border-none px-5 py-2.5 font-mono text-[11px] tracking-wide uppercase cursor-pointer transition-all duration-200 border-r border-surface-border-light last:border-r-0 ${
@@ -269,13 +289,76 @@ export default function CreatePage() {
                 rows={8}
               />
             )}
+
+            {tab === "url" && (
+              <div>
+                <input
+                  type="url"
+                  className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] p-5 font-sans text-[15px] outline-none transition-colors duration-200 placeholder:text-zinc-700"
+                  placeholder="e.g. https://en.wikipedia.org/wiki/Artificial_intelligence"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                />
+                <div className="font-mono text-[10px] tracking-wider uppercase text-zinc-700 mt-3">
+                  Enter any article, blog post, or webpage URL to scrape and convert to slides.
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Customizations: Audience, Tone, and Slide Count */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div>
+              <label className="block font-mono text-[10px] tracking-wider uppercase text-zinc-500 mb-2">Target Audience</label>
+              <select
+                value={audience}
+                onChange={(e) => setAudience(e.target.value)}
+                className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] px-3.5 py-3 font-sans text-xs md:text-sm outline-none transition-colors duration-200 cursor-pointer"
+              >
+                <option value="General Public">General Public</option>
+                <option value="Investors / Venture Capital">Investors / Venture Capital</option>
+                <option value="Business Professionals">Business Professionals</option>
+                <option value="Students / Academic">Students / Academic</option>
+                <option value="Technical / Developers">Technical / Developers</option>
+                <option value="Creative / Designers">Creative / Designers</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-mono text-[10px] tracking-wider uppercase text-zinc-500 mb-2">Tone of Voice</label>
+              <select
+                value={tone}
+                onChange={(e) => setTone(e.target.value)}
+                className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] px-3.5 py-3 font-sans text-xs md:text-sm outline-none transition-colors duration-200 cursor-pointer"
+              >
+                <option value="Professional & Clean">Professional & Clean</option>
+                <option value="Persuasive & Convincing">Persuasive & Convincing</option>
+                <option value="Casual & Conversational">Casual & Conversational</option>
+                <option value="Inspirational & Bold">Inspirational & Bold</option>
+                <option value="Analytical & Detailed">Analytical & Detailed</option>
+                <option value="Witty & Humorous">Witty & Humorous</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-mono text-[10px] tracking-wider uppercase text-zinc-500 mb-2">Slide Count</label>
+              <select
+                value={slideCount}
+                onChange={(e) => setSlideCount(parseInt(e.target.value, 10))}
+                className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] px-3.5 py-3 font-sans text-xs md:text-sm outline-none transition-colors duration-200 cursor-pointer"
+              >
+                <option value="8">8 Slides (Short & Sweet)</option>
+                <option value="10">10 Slides (Standard Pitch)</option>
+                <option value="12">12 Slides (Detailed)</option>
+                <option value="15">15 Slides (Comprehensive)</option>
+              </select>
+            </div>
           </div>
 
           <button
             className={`group w-full border font-mono text-[13px] tracking-wide uppercase cursor-pointer flex items-center justify-between px-8 py-[18px] rounded-[3px] transition-all duration-250 ${
               (tab === "prompt" && prompt.trim()) ||
               (tab === "paste" && pasteText.trim()) ||
-              (tab === "upload" && file)
+              (tab === "upload" && file) ||
+              (tab === "url" && urlInput.trim())
                 ? "bg-cream border-cream text-[#080808] hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(232,228,220,0.12)]"
                 : "bg-[#1a1a1a] border-zinc-800 text-zinc-500"
             }`}

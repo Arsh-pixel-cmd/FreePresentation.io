@@ -59,6 +59,8 @@ export interface GenerateRequest {
   text?: string
   themeId: ThemeId
   slideCount?: number
+  audience?: string
+  tone?: string
 }
 
 export interface GenerateResponse {
