@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Presentation, Slide, ThemeId } from "@/types/presentation";
 import { checkRateLimit } from "@/lib/queue/upstash";
+import { uploadExternalImageToStorage } from "@/lib/supabase/storage";
 
 function getSystemPrompt(audience: string, tone: string, slideCount: number) {
   return `You are a professional presentation designer and content strategist.
@@ -222,17 +223,23 @@ async function generateWithDeepSeek(promptContent: string, systemPrompt: string,
 
 async function attachImages(slides: Slide[]): Promise<Slide[]> {
   return await Promise.all(
-    slides.map(async (slide) => {
+    slides.map(async (slide, index) => {
       if (!slide.imageQuery) return slide;
 
       const unsplashUrl = await fetchUnsplashImage(slide.imageQuery);
-      if (unsplashUrl) return { ...slide, image: unsplashUrl };
+      let imageUrl = "";
+      if (unsplashUrl) {
+        imageUrl = unsplashUrl;
+      } else {
+        imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+          slide.imageQuery + ", professional photography, high quality"
+        )}?width=1200&height=675&nologo=true`;
+      }
 
-      const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
-        slide.imageQuery + ", professional photography, high quality"
-      )}?width=1200&height=675&nologo=true`;
+      const filename = `img_${Date.now()}_${index}.jpg`;
+      const cachedUrl = await uploadExternalImageToStorage(imageUrl, filename);
 
-      return { ...slide, image: pollinationsUrl };
+      return { ...slide, image: cachedUrl };
     })
   );
 }
