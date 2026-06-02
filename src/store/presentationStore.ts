@@ -1,6 +1,52 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Presentation, Slide, ThemeId } from "@/types/presentation";
+import { createClient } from "@/lib/supabase/client";
+
+// ── Supabase cloud sync helpers ──────────────────────────────
+// These fire-and-forget — LocalStorage is the source of truth for speed,
+// Supabase is the durable backup when a user is authenticated.
+
+async function syncToCloud(presentation: Presentation) {
+  try {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return; // guest mode — skip cloud sync
+
+    await supabase.from("presentations").upsert(
+      {
+        id: presentation.id,
+        user_id: user.id,
+        title: presentation.title,
+        topic: presentation.topic,
+        theme_id: presentation.themeId,
+        slides: presentation.slides,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+  } catch (err) {
+    console.warn("[Cloud Sync] Failed to sync presentation:", err);
+  }
+}
+
+async function deleteFromCloud(presentationId: string) {
+  try {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from("presentations").delete().eq("id", presentationId);
+  } catch (err) {
+    console.warn("[Cloud Sync] Failed to delete presentation:", err);
+  }
+}
+
+// ── Store ────────────────────────────────────────────────────
 
 interface PresentationStore {
   presentation: Presentation | null;
@@ -21,6 +67,9 @@ interface PresentationStore {
   getPresentation: (id: string) => Presentation | null;
   deletePresentation: (id: string) => void;
   listPresentations: () => Presentation[];
+
+  // Cloud sync
+  loadFromCloud: () => Promise<void>;
 
   activeSlideIndex: number;
   setActiveSlideIndex: (i: number) => void;
@@ -49,6 +98,7 @@ export const usePresentationStore = create<PresentationStore>()(
             updatedAt: new Date().toISOString(),
           };
           const saved = { ...state.saved, [updated.id]: updated };
+          syncToCloud(updated);
           return { presentation: updated, saved };
         }),
 
@@ -62,6 +112,7 @@ export const usePresentationStore = create<PresentationStore>()(
             updatedAt: new Date().toISOString(),
           };
           const saved = { ...state.saved, [updated.id]: updated };
+          syncToCloud(updated);
           return {
             presentation: updated,
             saved,
@@ -84,6 +135,7 @@ export const usePresentationStore = create<PresentationStore>()(
             state.activeSlideIndex,
             slides.length - 1
           );
+          syncToCloud(updated);
           return { presentation: updated, saved, activeSlideIndex };
         }),
 
@@ -96,6 +148,7 @@ export const usePresentationStore = create<PresentationStore>()(
             updatedAt: new Date().toISOString(),
           };
           const saved = { ...state.saved, [updated.id]: updated };
+          syncToCloud(updated);
           return { presentation: updated, saved };
         }),
 
@@ -108,6 +161,7 @@ export const usePresentationStore = create<PresentationStore>()(
             updatedAt: new Date().toISOString(),
           };
           const saved = { ...state.saved, [updated.id]: updated };
+          syncToCloud(updated);
           return { presentation: updated, saved };
         }),
 
@@ -120,15 +174,17 @@ export const usePresentationStore = create<PresentationStore>()(
             updatedAt: new Date().toISOString(),
           };
           const saved = { ...state.saved, [updated.id]: updated };
+          syncToCloud(updated);
           return { presentation: updated, saved };
         }),
 
       saved: {},
 
       savePresentation: (p) =>
-        set((state) => ({
-          saved: { ...state.saved, [p.id]: p },
-        })),
+        set((state) => {
+          syncToCloud(p);
+          return { saved: { ...state.saved, [p.id]: p } };
+        }),
 
       getPresentation: (id) => get().saved[id] || null,
 
@@ -136,6 +192,7 @@ export const usePresentationStore = create<PresentationStore>()(
         set((state) => {
           const saved = { ...state.saved };
           delete saved[id];
+          deleteFromCloud(id);
           return { saved };
         }),
 
@@ -144,6 +201,56 @@ export const usePresentationStore = create<PresentationStore>()(
           (a, b) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         ),
+
+      // Pull cloud presentations and merge them into the local store
+      loadFromCloud: async () => {
+        try {
+          const supabase = createClient();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) return;
+
+          const { data, error } = await supabase
+            .from("presentations")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("updated_at", { ascending: false });
+
+          if (error || !data) return;
+
+          const cloudSaved: Record<string, Presentation> = {};
+          for (const row of data) {
+            cloudSaved[row.id] = {
+              id: row.id,
+              title: row.title,
+              topic: row.topic || "",
+              themeId: row.theme_id as ThemeId,
+              slides: row.slides as Slide[],
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+            };
+          }
+
+          // Merge: cloud wins on conflicts (newer updated_at takes precedence)
+          set((state) => {
+            const merged = { ...state.saved };
+            for (const [id, cloudPres] of Object.entries(cloudSaved)) {
+              const local = merged[id];
+              if (
+                !local ||
+                new Date(cloudPres.updatedAt).getTime() >
+                  new Date(local.updatedAt).getTime()
+              ) {
+                merged[id] = cloudPres;
+              }
+            }
+            return { saved: merged };
+          });
+        } catch (err) {
+          console.warn("[Cloud Sync] Failed to load from cloud:", err);
+        }
+      },
 
       activeSlideIndex: 0,
       setActiveSlideIndex: (i) => set({ activeSlideIndex: i }),
