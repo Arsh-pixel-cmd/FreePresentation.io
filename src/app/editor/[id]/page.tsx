@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { usePresentationStore } from "@/store/presentationStore";
 import { Presentation, Slide, ThemeId, SlideTheme } from "@/types/presentation";
 import { THEMES, THEME_LIST } from "@/lib/themes/themes";
+import { duplicatePresentationAction, updatePresentationTitleAction } from "@/app/actions";
 
 export default function EditorPage() {
   const params = useParams();
@@ -36,6 +38,73 @@ export default function EditorPage() {
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [editingSlide, setEditingSlide] = useState<Slide | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [activePeers, setActivePeers] = useState<string[]>([]);
+  const channelRef = useRef<any>(null);
+
+  // Setup Supabase Realtime Collaboration channel
+  useEffect(() => {
+    const supabase = createClient();
+    const sessionUserId = `user-${Math.random().toString(36).substring(2, 6)}`;
+    const channel = supabase.channel(`presentation:${id}`, {
+      config: {
+        broadcast: { self: false },
+        presence: { key: sessionUserId },
+      },
+    });
+
+    channel
+      .on("broadcast", { event: "slide-mutation" }, ({ payload }) => {
+        const { type, data } = payload;
+        if (type === "update-slide") {
+          updateSlide(data);
+        } else if (type === "add-slide") {
+          addSlide(data);
+        } else if (type === "delete-slide") {
+          deleteSlide(data);
+        } else if (type === "reorder-slides") {
+          reorderSlides(data);
+        } else if (type === "set-theme") {
+          setTheme(data);
+        } else if (type === "set-title") {
+          setTitle(data);
+        }
+      })
+      .on("broadcast", { event: "peer-active-slide" }, ({ payload }) => {
+        const { peerName, slideIndex } = payload;
+        showToast(`${peerName || "Someone"} moved to slide ${slideIndex + 1}`);
+      })
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState();
+        const peers = Object.keys(state).map((k) => `User ${k.replace("user-", "")}`);
+        setActivePeers(peers);
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          console.log("Subscribed to presentation realtime room:", id);
+          channel.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    channelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, updateSlide, addSlide, deleteSlide, reorderSlides, setTheme, setTitle]);
+
+  // Broadcast local active slide changes to other peers
+  useEffect(() => {
+    if (channelRef.current && presentation) {
+      channelRef.current.send({
+        type: "broadcast",
+        event: "peer-active-slide",
+        payload: {
+          peerName: `User ${id.substring(0, 4)}`,
+          slideIndex: activeSlideIndex,
+        },
+      });
+    }
+  }, [activeSlideIndex, presentation, id]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -125,6 +194,11 @@ export default function EditorPage() {
     };
     addSlide(newSlide);
     showToast("Slide added");
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "slide-mutation",
+      payload: { type: "add-slide", data: newSlide }
+    });
   };
 
   const handleDeleteSlide = (idx: number) => {
@@ -132,6 +206,11 @@ export default function EditorPage() {
     const slideId = presentation.slides[idx].id;
     deleteSlide(slideId);
     showToast("Slide deleted");
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "slide-mutation",
+      payload: { type: "delete-slide", data: slideId }
+    });
   };
 
   const handleDrop = (targetIdx: number) => {
@@ -142,16 +221,55 @@ export default function EditorPage() {
     reorderSlides(slides);
     setActiveSlideIndex(targetIdx);
     setDragIdx(null);
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "slide-mutation",
+      payload: { type: "reorder-slides", data: slides }
+    });
   };
 
   const handleSaveSlide = (updated: Slide) => {
     updateSlide(updated);
     showToast("Slide saved");
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "slide-mutation",
+      payload: { type: "update-slide", data: updated }
+    });
   };
 
-  const handleTitleSave = () => {
+  const handleTitleSave = async () => {
     setTitle(titleDraft);
     setEditingTitle(false);
+    try {
+      const res = await updatePresentationTitleAction(presentation.id, titleDraft);
+      if (res.success) {
+        showToast("Title synced to cloud ✓");
+      }
+      channelRef.current?.send({
+        type: "broadcast",
+        event: "slide-mutation",
+        payload: { type: "set-title", data: titleDraft }
+      });
+    } catch (err) {
+      console.error("[Server Action] Title save failed:", err);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    if (!presentation) return;
+    try {
+      showToast("Duplicating presentation...");
+      const duplicated = await duplicatePresentationAction(presentation);
+      savePresentation(duplicated);
+      showToast("Duplicated successfully! Redirecting...");
+      setTimeout(() => {
+        router.push(`/editor/${duplicated.id}`);
+      }, 800);
+    } catch (err) {
+      showToast("Duplication failed.");
+      console.error("[Server Action] Duplication failed:", err);
+    }
   };
 
   if (notFound) {
@@ -227,6 +345,14 @@ export default function EditorPage() {
           <span className="font-mono text-[10px] tracking-wide text-zinc-700 bg-surface-subtle border border-surface-border-light px-2 py-0.5 rounded-[2px]">
             {presentation.slides.length} slides
           </span>
+          {activePeers.length > 0 && (
+            <div className="flex items-center gap-1.5 ml-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              <span className="font-mono text-[9px] text-zinc-500 uppercase tracking-wider">
+                {activePeers.length} active
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 items-center shrink-0">
@@ -253,7 +379,16 @@ export default function EditorPage() {
                     className={`flex items-center gap-2.5 w-full px-4 py-2.5 bg-transparent border-none cursor-pointer font-mono text-[11px] tracking-wide uppercase transition-all duration-150 border-b border-surface-border last:border-b-0 hover:bg-[#111] hover:text-cream ${
                       presentation.themeId === t.id ? "text-cream" : "text-zinc-500"
                     }`}
-                    onClick={() => { setTheme(t.id as ThemeId); setThemeMenuOpen(false); showToast(`Theme: ${t.name}`); }}
+                    onClick={() => {
+                      setTheme(t.id as ThemeId);
+                      setThemeMenuOpen(false);
+                      showToast(`Theme: ${t.name}`);
+                      channelRef.current?.send({
+                        type: "broadcast",
+                        event: "slide-mutation",
+                        payload: { type: "set-theme", data: t.id }
+                      });
+                    }}
                   >
                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.accent, display: "inline-block", flexShrink: 0 }} />
                     {t.name}
@@ -266,6 +401,10 @@ export default function EditorPage() {
 
           <button className="bg-transparent border border-surface-border-light text-zinc-400 hover:border-zinc-600 hover:text-cream px-3 py-[5px] rounded-[2px] font-mono text-[10px] tracking-wide uppercase cursor-pointer transition-all duration-200 whitespace-nowrap flex items-center gap-1.5" onClick={handleAddSlide}>
             + Add slide
+          </button>
+
+          <button className="bg-transparent border border-surface-border-light text-zinc-400 hover:border-zinc-600 hover:text-cream px-3 py-[5px] rounded-[2px] font-mono text-[10px] tracking-wide uppercase cursor-pointer transition-all duration-200 whitespace-nowrap flex items-center gap-1.5" onClick={handleDuplicate}>
+            Duplicate
           </button>
 
           <div className="relative">
