@@ -1,8 +1,16 @@
 import { Redis } from "@upstash/redis";
 import { Client as QStashClient } from "@upstash/qstash";
 
-const hasRedisConfig = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
-const hasQStashConfig = !!process.env.QSTASH_TOKEN;
+const hasRedisConfig = !!(
+  process.env.UPSTASH_REDIS_REST_URL &&
+  process.env.UPSTASH_REDIS_REST_URL.startsWith("https") &&
+  process.env.UPSTASH_REDIS_REST_TOKEN &&
+  process.env.UPSTASH_REDIS_REST_TOKEN !== "your_upstash_redis_token_here"
+);
+const hasQStashConfig = !!(
+  process.env.QSTASH_TOKEN &&
+  process.env.QSTASH_TOKEN !== "your_qstash_token_here"
+);
 
 export const redis = hasRedisConfig
   ? new Redis({

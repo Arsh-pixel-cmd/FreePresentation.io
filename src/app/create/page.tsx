@@ -23,12 +23,18 @@ const EXAMPLE_PROMPTS = [
   "Introduction to quantum computing",
 ];
 
-const LOAD_STEPS = [
+const OUTLINE_LOAD_STEPS = [
   "Analyzing your topic…",
-  "Writing slide content…",
-  "Structuring the narrative…",
-  "Sourcing images…",
-  "Assembling your presentation…",
+  "Structuring presentation narrative…",
+  "Drafting presentation outline…",
+];
+
+const FULL_GEN_LOAD_STEPS = [
+  "Expanding presentation outline…",
+  "Fleshing out comprehensive slide details…",
+  "Sourcing high-resolution images…",
+  "Injecting theme styling and layouts…",
+  "Assembling final presentation files…",
 ];
 
 export default function CreatePage() {
@@ -40,15 +46,17 @@ export default function CreatePage() {
   const [file, setFile] = useState<File | null>(null);
   const [themeId, setThemeId] = useState<ThemeId>("obsidian");
   const [loading, setLoading] = useState(false);
+  const [loadingType, setLoadingType] = useState<"outline" | "presentation" | null>(null);
   const [loadStep, setLoadStep] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [audience, setAudience] = useState("General Public");
   const [tone, setTone] = useState("Professional & Clean");
   const [slideCount, setSlideCount] = useState(12);
+  const [outline, setOutline] = useState<{ title: string; slides: { id: string; layout: string; title: string; summary: string }[] } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleGenerate = useCallback(async () => {
+  const handleGenerateOutline = useCallback(async () => {
     const hasInput =
       (tab === "prompt" && prompt.trim()) ||
       (tab === "paste" && pasteText.trim()) ||
@@ -57,28 +65,22 @@ export default function CreatePage() {
     if (!hasInput) return;
 
     setLoading(true);
+    setLoadingType("outline");
     setLoadStep(0);
     setError(null);
 
     const interval = setInterval(() => {
-      setLoadStep((s) => (s < LOAD_STEPS.length - 1 ? s + 1 : s));
+      setLoadStep((s) => (s < OUTLINE_LOAD_STEPS.length - 1 ? s + 1 : s));
     }, 1800);
 
     try {
-      const formData = new FormData();
-      formData.append("themeId", themeId);
-      formData.append("audience", audience);
-      formData.append("tone", tone);
-      formData.append("slideCount", String(slideCount));
+      let rawText = "";
 
       if (tab === "prompt") {
-        formData.append("mode", "prompt");
-        formData.append("prompt", prompt);
+        rawText = prompt;
       } else if (tab === "paste") {
-        formData.append("mode", "paste");
-        formData.append("text", pasteText);
+        rawText = pasteText;
       } else if (tab === "url" && urlInput.trim()) {
-        setLoadStep(0);
         const parseRes = await fetch("/api/parse/url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -86,20 +88,63 @@ export default function CreatePage() {
         });
         const parseData = await parseRes.json();
         if (parseData.error) throw new Error(parseData.error);
-        formData.append("mode", "paste");
-        formData.append("text", parseData.text);
+        rawText = parseData.text;
       } else if (tab === "upload" && file) {
-        setLoadStep(0);
         const parseForm = new FormData();
         parseForm.append("file", file);
         const parseRes = await fetch("/api/parse", { method: "POST", body: parseForm });
         const parseData = await parseRes.json();
         if (parseData.error) throw new Error(parseData.error);
-        formData.append("mode", "paste");
-        formData.append("text", parseData.text);
+        rawText = parseData.text;
       }
 
-      setLoadStep(1);
+      const res = await fetch("/api/generate/outline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: rawText,
+          audience,
+          tone,
+          slideCount,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      if (data.outline) {
+        setOutline(data.outline);
+      }
+    } catch (e: any) {
+      console.error(e);
+      setError(e?.message || "Outline generation failed. Please try again.");
+    } finally {
+      setLoading(false);
+      setLoadingType(null);
+      clearInterval(interval);
+    }
+  }, [tab, prompt, pasteText, urlInput, file, audience, tone, slideCount]);
+
+  const handleGeneratePresentation = useCallback(async () => {
+    if (!outline) return;
+
+    setLoading(true);
+    setLoadingType("presentation");
+    setLoadStep(0);
+    setError(null);
+
+    const interval = setInterval(() => {
+      setLoadStep((s) => (s < FULL_GEN_LOAD_STEPS.length - 1 ? s + 1 : s));
+    }, 2000);
+
+    try {
+      const formData = new FormData();
+      formData.append("mode", "outline");
+      formData.append("outline", JSON.stringify(outline));
+      formData.append("themeId", themeId);
+      formData.append("audience", audience);
+      formData.append("tone", tone);
+
       const res = await fetch("/api/generate", { method: "POST", body: formData });
       const data = await res.json();
 
@@ -112,12 +157,13 @@ export default function CreatePage() {
       }
     } catch (e: any) {
       console.error(e);
-      setError(e?.message || "Something went wrong. Please try again.");
+      setError(e?.message || "Failed to expand presentation. Please try again.");
       setLoading(false);
+      setLoadingType(null);
     } finally {
       clearInterval(interval);
     }
-  }, [tab, prompt, pasteText, urlInput, file, themeId, savePresentation, setPresentation, audience, tone, slideCount]);
+  }, [outline, themeId, audience, tone, savePresentation, setPresentation]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -130,6 +176,7 @@ export default function CreatePage() {
   }, []);
 
   if (loading) {
+    const activeSteps = loadingType === "outline" ? OUTLINE_LOAD_STEPS : FULL_GEN_LOAD_STEPS;
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="text-center">
@@ -138,10 +185,10 @@ export default function CreatePage() {
             <div className="absolute inset-2 border border-indigo/10 border-t-indigo/50 rounded-full animate-spin-reverse" />
           </div>
           <div className="font-serif text-2xl text-cream tracking-tight mb-7 min-h-[36px] transition-opacity duration-300">
-            {LOAD_STEPS[loadStep]}
+            {activeSteps[loadStep] || "Processing…"}
           </div>
           <div className="flex gap-2 justify-center mb-8">
-            {LOAD_STEPS.map((_, i) => (
+            {activeSteps.map((_, i) => (
               <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors duration-400 ${i <= loadStep ? "bg-indigo" : "bg-zinc-800"}`} />
             ))}
           </div>
@@ -153,6 +200,162 @@ export default function CreatePage() {
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (outline) {
+    return (
+      <>
+        <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-6 md:px-12 py-5 border-b border-surface-border backdrop-blur-md bg-surface/80">
+          <a href="/" className="font-serif text-[18px] text-cream no-underline">
+            Free<span className="text-indigo">Presentation</span>
+          </a>
+          <button
+            className="font-mono text-[10px] tracking-wider uppercase text-zinc-500 hover:text-cream bg-transparent border border-surface-border-light hover:border-zinc-700 px-4.5 py-2.5 rounded-[2px] cursor-pointer transition-colors duration-150"
+            onClick={() => setOutline(null)}
+          >
+            ← Back to Prompt
+          </button>
+        </nav>
+
+        <main className="min-h-screen pt-[105px] pb-24 px-6 md:px-16 max-w-[800px] mx-auto bg-surface">
+          <div className="mb-10 border-b border-surface-border pb-8">
+            <label className="block font-mono text-[10px] tracking-widest uppercase text-zinc-500 mb-2">Presentation Title</label>
+            <input
+              type="text"
+              className="w-full bg-transparent border-none focus:outline-none font-serif text-[28px] md:text-[40px] text-cream placeholder:text-zinc-800 leading-tight"
+              value={outline.title}
+              onChange={(e) => setOutline({ ...outline, title: e.target.value })}
+              placeholder="Outline Title"
+            />
+          </div>
+
+          <div className="space-y-4 mb-10">
+            {outline.slides.map((slide, idx) => (
+              <div key={slide.id} className="bg-[#080808] border border-surface-border-light rounded-[4px] p-5 md:p-7 hover:border-zinc-800 transition-colors duration-250">
+                <div className="flex justify-between items-center mb-5 gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs text-zinc-500 bg-zinc-800/10 px-2 py-0.5 rounded-[2px] border border-zinc-800/20">{idx + 1}</span>
+                    <select
+                      value={slide.layout}
+                      onChange={(e) => {
+                        const slides = [...outline.slides];
+                        slides[idx] = { ...slides[idx], layout: e.target.value };
+                        setOutline({ ...outline, slides });
+                      }}
+                      className="bg-[#080808] border border-surface-border-light focus:border-indigo text-indigo font-mono text-[10px] tracking-wider uppercase px-2 py-1 rounded-[2px] outline-none cursor-pointer"
+                    >
+                      <option value="title">title</option>
+                      <option value="content">content</option>
+                      <option value="two-col">two-col</option>
+                      <option value="image-right">image-right</option>
+                      <option value="image-left">image-left</option>
+                      <option value="image-full">image-full</option>
+                      <option value="quote">quote</option>
+                      <option value="stats">stats</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      className="bg-transparent border border-surface-border-light text-zinc-500 hover:text-cream px-2 py-1 rounded-[2px] cursor-pointer disabled:opacity-20 transition-colors duration-150"
+                      disabled={idx === 0}
+                      onClick={() => {
+                        const slides = [...outline.slides];
+                        const temp = slides[idx];
+                        slides[idx] = slides[idx - 1];
+                        slides[idx - 1] = temp;
+                        setOutline({ ...outline, slides });
+                      }}
+                      title="Move Up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      className="bg-transparent border border-surface-border-light text-zinc-500 hover:text-cream px-2 py-1 rounded-[2px] cursor-pointer disabled:opacity-20 transition-colors duration-150"
+                      disabled={idx === outline.slides.length - 1}
+                      onClick={() => {
+                        const slides = [...outline.slides];
+                        const temp = slides[idx];
+                        slides[idx] = slides[idx + 1];
+                        slides[idx + 1] = temp;
+                        setOutline({ ...outline, slides });
+                      }}
+                      title="Move Down"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      className="bg-transparent border border-red-500/10 hover:border-red-500/30 text-zinc-500 hover:text-red-400 px-3 py-1 rounded-[2px] cursor-pointer transition-colors duration-150 text-[11px] font-mono uppercase tracking-wide"
+                      onClick={() => {
+                        const slides = outline.slides.filter((_, i) => i !== idx);
+                        setOutline({ ...outline, slides });
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block font-mono text-[9px] tracking-widest uppercase text-zinc-700 mb-1.5">Slide Title</label>
+                    <input
+                      type="text"
+                      className="w-full bg-transparent border-b border-surface-border focus:border-indigo text-cream text-[16px] font-light py-1 focus:outline-none placeholder:text-zinc-800"
+                      value={slide.title}
+                      onChange={(e) => {
+                        const slides = [...outline.slides];
+                        slides[idx] = { ...slides[idx], title: e.target.value };
+                        setOutline({ ...outline, slides });
+                      }}
+                      placeholder="Enter slide title..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-mono text-[9px] tracking-widest uppercase text-zinc-700 mb-1.5">Bullet summary / descriptive cues</label>
+                    <textarea
+                      className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-zinc-400 text-xs md:text-sm p-4 rounded-[3px] focus:outline-none resize-y leading-relaxed"
+                      value={slide.summary}
+                      onChange={(e) => {
+                        const slides = [...outline.slides];
+                        slides[idx] = { ...slides[idx], summary: e.target.value };
+                        setOutline({ ...outline, slides });
+                      }}
+                      rows={2}
+                      placeholder="Describe what points, arguments, or topics this slide should expand..."
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              className="flex-1 bg-transparent border border-dashed border-surface-border-light hover:border-indigo hover:text-indigo text-zinc-500 py-4.5 rounded-[3px] font-mono text-[11px] tracking-wide uppercase cursor-pointer transition-all duration-200"
+              onClick={() => {
+                const newSlide = {
+                  id: `slide-new-${Date.now()}`,
+                  layout: "content",
+                  title: "New Slide",
+                  summary: "Provide slide outline details here."
+                };
+                setOutline({ ...outline, slides: [...outline.slides, newSlide] });
+              }}
+            >
+              + Add Slide to Outline
+            </button>
+            <button
+              className="flex-1 bg-cream hover:bg-white text-[#080808] border-none py-4.5 px-8 rounded-[3px] font-mono text-[12px] tracking-wider uppercase font-semibold cursor-pointer transition-colors duration-250 flex items-center justify-between"
+              onClick={handleGeneratePresentation}
+            >
+              <span>Expand & Generate Slides</span>
+              <span>→</span>
+            </button>
+          </div>
+        </main>
+      </>
     );
   }
 
@@ -362,7 +565,7 @@ export default function CreatePage() {
                 ? "bg-cream border-cream text-[#080808] hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(232,228,220,0.12)]"
                 : "bg-[#1a1a1a] border-zinc-800 text-zinc-500"
             }`}
-            onClick={handleGenerate}
+            onClick={handleGenerateOutline}
           >
             <span>Generate presentation</span>
             <span className="text-lg transition-transform duration-200 group-hover:translate-x-1">

@@ -38,6 +38,44 @@ JSON SCHEMA (return this exact structure):
 }`;
 }
 
+function getOutlineRefiningPrompt(audience: string, tone: string, outlineJson: string) {
+  return `You are a professional presentation content writer.
+Your job is to expand a pre-approved presentation outline into a complete, structured JSON presentation.
+
+TARGET AUDIENCE: ${audience}
+TONE OF VOICE: ${tone}
+
+PRE-APPROVED OUTLINE:
+${outlineJson}
+
+CRITICAL RULES:
+1. Return ONLY valid JSON — no markdown, no backticks, no preamble
+2. Expand exactly the slides provided in the PRE-APPROVED OUTLINE. Keep the same slide order and layouts.
+3. For each slide:
+   - Match the provided "title" and "layout"
+   - Generate varied, detailed body bullets (3-5 items, each 8-15 words) that elaborate beautifully on the outline slide's "summary"
+   - Generate a highly relevant "imageQuery" (2-5 words for Unsplash photo search)
+   - Write comprehensive "speakerNotes" (notes for the presenter)
+   - If the layout is "stats", include a "stats" array with 3 items: { label: string, value: string } matching the outline theme
+   - If the layout is "quote", include a "quote" string and a "quoteAuthor" string
+4. DO NOT use generic filler — write real, substantive, deeply analytical content.
+
+JSON SCHEMA (return this exact structure matching the number of slides in the outline):
+{
+  "title": "Presentation title",
+  "slides": [
+    {
+      "id": "slide-1",
+      "layout": "title",
+      "title": "Slide Title",
+      "body": ["Detail point 1", "Detail point 2", "Detail point 3"],
+      "imageQuery": "relevant photo query",
+      "speakerNotes": "Speaker script or detailed talking points..."
+    }
+  ]
+}`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -66,14 +104,25 @@ export async function POST(req: NextRequest) {
       userContent = formData.get("text") as string;
     }
 
-    // Input sanitization: limit length to prevent prompt injection and token limits
-    userContent = (userContent || "").trim().substring(0, 5000);
+    let systemPrompt = "";
+    let promptContent = "";
 
-    if (!userContent) {
-      return NextResponse.json({ error: "No content provided" }, { status: 400 });
+    if (mode === "outline") {
+      const outline = formData.get("outline") as string;
+      systemPrompt = getOutlineRefiningPrompt(audience, tone, outline);
+      promptContent = `Generate the full slide deck contents from the pre-approved outline:\n${outline}`;
+      userContent = "Outline expansion"; // fallback label for topic
+    } else {
+      // Input sanitization: limit length to prevent prompt injection and token limits
+      userContent = (userContent || "").trim().substring(0, 5000);
+
+      if (!userContent) {
+        return NextResponse.json({ error: "No content provided" }, { status: 400 });
+      }
+
+      systemPrompt = getSystemPrompt(audience, tone, slideCount);
+      promptContent = `Create a presentation about:\n${userContent}`;
     }
-
-    const systemPrompt = getSystemPrompt(audience, tone, slideCount);
 
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -86,7 +135,7 @@ export async function POST(req: NextRequest) {
               role: "user",
               parts: [
                 {
-                  text: `${systemPrompt}\n\nCreate a presentation about:\n${userContent}`,
+                  text: `${systemPrompt}\n\n${promptContent}`,
                 },
               ],
             },
@@ -100,19 +149,15 @@ export async function POST(req: NextRequest) {
     );
 
     if (!geminiRes.ok) {
-      return await generateWithDeepSeek(userContent, themeId, audience, tone, slideCount);
+      return await generateWithDeepSeek(promptContent, systemPrompt, themeId, userContent);
     }
 
     const geminiData = await geminiRes.json();
     const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     const slideData = parseJSON(rawText);
-    if (!slideData) {
-      return await generateWithDeepSeek(userContent, themeId, audience, tone, slideCount);
-    }
-
-    if (!Array.isArray(slideData.slides) || slideData.slides.length === 0) {
-      return await generateWithDeepSeek(userContent, themeId, audience, tone, slideCount);
+    if (!slideData || !Array.isArray(slideData.slides) || slideData.slides.length === 0) {
+      return await generateWithDeepSeek(promptContent, systemPrompt, themeId, userContent);
     }
 
     const slidesWithImages = await attachImages(slideData.slides as Slide[]);
@@ -134,9 +179,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function generateWithDeepSeek(userContent: string, themeId: ThemeId, audience: string, tone: string, slideCount: number) {
-  const systemPrompt = getSystemPrompt(audience, tone, slideCount);
-
+async function generateWithDeepSeek(promptContent: string, systemPrompt: string, themeId: ThemeId, topic: string) {
   const res = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: {
@@ -147,7 +190,7 @@ async function generateWithDeepSeek(userContent: string, themeId: ThemeId, audie
       model: "deepseek-chat",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Create a presentation about:\n${userContent}` },
+        { role: "user", content: promptContent },
       ],
       temperature: 0.7,
       max_tokens: 4096,
@@ -167,7 +210,7 @@ async function generateWithDeepSeek(userContent: string, themeId: ThemeId, audie
   const presentation: Presentation = {
     id: `pres-${Date.now()}`,
     title: slideData.title || "My Presentation",
-    topic: userContent,
+    topic,
     slides: slidesWithImages,
     themeId,
     createdAt: new Date().toISOString(),
