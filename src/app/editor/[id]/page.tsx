@@ -7,6 +7,7 @@ import { usePresentationStore } from "@/store/presentationStore";
 import { Presentation, Slide, ThemeId, SlideTheme } from "@/types/presentation";
 import { THEMES, THEME_LIST } from "@/lib/themes/themes";
 import { duplicatePresentationAction, updatePresentationTitleAction } from "@/app/actions";
+import SlideAnnotationCanvas from "@/components/SlideAnnotationCanvas";
 
 export default function EditorPage() {
   const params = useParams();
@@ -40,6 +41,7 @@ export default function EditorPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [activePeers, setActivePeers] = useState<string[]>([]);
   const channelRef = useRef<any>(null);
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
 
   // Setup Supabase Realtime Collaboration channel
   useEffect(() => {
@@ -239,6 +241,7 @@ export default function EditorPage() {
   };
 
   const handleTitleSave = async () => {
+    if (!presentation) return;
     setTitle(titleDraft);
     setEditingTitle(false);
     try {
@@ -399,6 +402,17 @@ export default function EditorPage() {
             )}
           </div>
 
+          <button
+            className={`px-3 py-[5px] rounded-[2px] font-mono text-[10px] tracking-wide uppercase cursor-pointer transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${
+              isDrawingMode
+                ? "bg-rose-500 border border-rose-500 text-white hover:bg-rose-600"
+                : "bg-transparent border border-surface-border-light text-zinc-400 hover:border-zinc-600 hover:text-cream"
+            }`}
+            onClick={() => setIsDrawingMode(!isDrawingMode)}
+          >
+            {isDrawingMode ? "✎ Draw: ON" : "✎ Annotate"}
+          </button>
+
           <button className="bg-transparent border border-surface-border-light text-zinc-400 hover:border-zinc-600 hover:text-cream px-3 py-[5px] rounded-[2px] font-mono text-[10px] tracking-wide uppercase cursor-pointer transition-all duration-200 whitespace-nowrap flex items-center gap-1.5" onClick={handleAddSlide}>
             + Add slide
           </button>
@@ -513,10 +527,20 @@ export default function EditorPage() {
 
           <div
             className="relative border border-surface-border-light rounded-[4px] overflow-hidden cursor-pointer max-w-[960px] shadow-[0_20px_60px_rgba(0,0,0,0.6)] hover:border-zinc-800 transition-colors duration-200"
-            onDoubleClick={() => setEditingSlide({ ...activeSlide })}
+            onDoubleClick={() => !isDrawingMode && setEditingSlide({ ...activeSlide })}
           >
             <SlideCanvasRenderer slide={activeSlide} theme={theme} />
-            <div className="absolute bottom-2.5 right-3.5 font-mono text-[9px] tracking-wide uppercase text-white/5 pointer-events-none">Double-click to edit</div>
+            <SlideAnnotationCanvas
+              strokes={activeSlide.annotations || []}
+              onChange={(updatedStrokes) => {
+                handleSaveSlide({ ...activeSlide, annotations: updatedStrokes });
+              }}
+              isDrawingMode={isDrawingMode}
+              themeAccent={theme.accent}
+            />
+            {!isDrawingMode && (
+              <div className="absolute bottom-2.5 right-3.5 font-mono text-[9px] tracking-wide uppercase text-white/5 pointer-events-none">Double-click to edit</div>
+            )}
           </div>
 
           {activeSlide?.speakerNotes && (

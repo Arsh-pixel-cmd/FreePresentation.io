@@ -39,6 +39,7 @@ export interface Slide {
   stats?: { label: string; value: string }[]
   quote?: string
   quoteAuthor?: string
+  annotations?: any[]
 }
 
 export interface Presentation {
