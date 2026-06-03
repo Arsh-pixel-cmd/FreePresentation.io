@@ -4,6 +4,9 @@ import { withSentryConfig } from "@sentry/nextjs";
 const nextConfig = {
   reactStrictMode: true,
 
+  // External packages for server components (moved from experimental in Next.js 16)
+  serverExternalPackages: ["pdfjs-dist", "tesseract.js", "canvas"],
+
   // Allow images from Unsplash, Pollinations, and any CDN
   images: {
     remotePatterns: [
@@ -61,11 +64,6 @@ const nextConfig = {
         destination: `${process.env.EXTERNAL_BACKEND_URL || "http://localhost:8000"}/:path*`, // Proxy to Backend
       },
     ];
-  },
-
-  // Increase serverless function timeout for PDF generation
-  experimental: {
-    serverComponentsExternalPackages: ["pdfjs-dist", "tesseract.js", "canvas"],
   },
 };
 
