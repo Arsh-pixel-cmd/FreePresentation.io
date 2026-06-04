@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { usePresentationStore } from "@/store/presentationStore";
@@ -42,6 +42,11 @@ export default function EditorPage() {
   const [activePeers, setActivePeers] = useState<string[]>([]);
   const channelRef = useRef<any>(null);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  }, []);
 
   // Setup Supabase Realtime Collaboration channel
   useEffect(() => {
@@ -92,7 +97,7 @@ export default function EditorPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id, updateSlide, addSlide, deleteSlide, reorderSlides, setTheme, setTitle]);
+  }, [id, updateSlide, addSlide, deleteSlide, reorderSlides, setTheme, setTitle, showToast]);
 
   // Broadcast local active slide changes to other peers
   useEffect(() => {
@@ -154,11 +159,6 @@ export default function EditorPage() {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [editingSlide, editingTitle, activeSlideIndex, presentation, setActiveSlideIndex]);
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  };
 
   const handleExport = async (format: "pptx" | "pdf") => {
     if (!presentation) return;

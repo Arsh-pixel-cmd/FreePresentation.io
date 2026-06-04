@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import Link from "next/link";
 import { ThemeId } from "@/types/presentation";
 import { THEME_LIST } from "@/lib/themes/themes";
 import { usePresentationStore } from "@/store/presentationStore";
@@ -207,9 +208,9 @@ export default function CreatePage() {
     return (
       <>
         <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-6 md:px-12 py-5 border-b border-surface-border backdrop-blur-md bg-surface/80">
-          <a href="/" className="font-serif text-[18px] text-cream no-underline">
+          <Link href="/" className="font-serif text-[18px] text-cream no-underline">
             Free<span className="text-indigo">Presentation</span>
-          </a>
+          </Link>
           <button
             className="font-mono text-[10px] tracking-wider uppercase text-zinc-500 hover:text-cream bg-transparent border border-surface-border-light hover:border-zinc-700 px-4.5 py-2.5 rounded-[2px] cursor-pointer transition-colors duration-150"
             onClick={() => setOutline(null)}
@@ -362,9 +363,9 @@ export default function CreatePage() {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-6 md:px-12 py-5 border-b border-surface-border backdrop-blur-md bg-surface/80">
-        <a href="/" className="font-serif text-[18px] text-cream no-underline">
+        <Link href="/" className="font-serif text-[18px] text-cream no-underline">
           Free<span className="text-indigo">Presentation</span>
-        </a>
+        </Link>
         <div className="flex items-center">
           <span className="font-mono text-[10px] tracking-wider uppercase text-green-600 bg-green-600/10 border border-green-600/20 px-3 py-1 rounded-[2px]">
             Always Free

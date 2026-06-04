@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 type AuthMode = "login" | "signup";
@@ -62,15 +63,15 @@ export default function LoginPage() {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-6 md:px-12 py-5 border-b border-surface-border backdrop-blur-md bg-surface/80">
-        <a href="/" className="font-serif text-[18px] text-cream no-underline">
+        <Link href="/" className="font-serif text-[18px] text-cream no-underline">
           Free<span className="text-indigo">Presentation</span>
-        </a>
-        <a
+        </Link>
+        <Link
           href="/create"
           className="font-mono text-[10px] tracking-wider uppercase text-zinc-500 hover:text-cream bg-transparent border border-surface-border-light hover:border-zinc-700 px-4 py-2.5 rounded-[2px] no-underline transition-colors duration-150"
         >
           Skip → Guest Mode
-        </a>
+        </Link>
       </nav>
 
       <main className="min-h-screen flex items-center justify-center px-6 pt-[73px] bg-surface">

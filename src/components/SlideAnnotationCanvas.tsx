@@ -26,11 +26,13 @@ export default function SlideAnnotationCanvas({
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentColor, setCurrentColor] = useState("#f43f5e"); // Default rose-500
   const [currentWidth, setCurrentWidth] = useState(3);
+  const [prevStrokes, setPrevStrokes] = useState<AnnotationStroke[]>(strokes);
   const [localStrokes, setLocalStrokes] = useState<AnnotationStroke[]>(strokes || []);
 
-  useEffect(() => {
+  if (strokes !== prevStrokes) {
+    setPrevStrokes(strokes);
     setLocalStrokes(strokes || []);
-  }, [strokes]);
+  }
 
   // Redraw canvas whenever strokes change or window resizes
   const draw = useCallback(() => {
