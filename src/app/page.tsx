@@ -191,12 +191,20 @@ function MiniSlide({ theme }: { theme: typeof THEME_PREVIEWS[0] }) {
 }
 
 export default function LandingPage() {
-  const [cursorPos, setCursorPos] = useState({ x: -200, y: -200 });
+  const cursorDotRef = useRef<HTMLDivElement>(null);
+  const cursorRingRef = useRef<HTMLDivElement>(null);
   const [heroWord, setHeroWord] = useState(0);
   const heroWords = ["Slides", "Decks", "Pitches", "Ideas"];
 
   useEffect(() => {
-    const onMove = (e: MouseEvent) => setCursorPos({ x: e.clientX, y: e.clientY });
+    const onMove = (e: MouseEvent) => {
+      if (cursorDotRef.current) {
+        cursorDotRef.current.style.transform = `translate3d(${e.clientX - 5}px, ${e.clientY - 5}px, 0)`;
+      }
+      if (cursorRingRef.current) {
+        cursorRingRef.current.style.transform = `translate3d(${e.clientX - 18}px, ${e.clientY - 18}px, 0)`;
+      }
+    };
     window.addEventListener("mousemove", onMove);
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
@@ -213,12 +221,14 @@ export default function LandingPage() {
     <>
       {/* Custom cursor */}
       <div
-        className="fixed w-2.5 h-2.5 bg-indigo rounded-full pointer-events-none z-[9999] mix-blend-difference transition-transform duration-100"
-        style={{ left: cursorPos.x - 5, top: cursorPos.y - 5 }}
+        ref={cursorDotRef}
+        className="fixed top-0 left-0 w-2.5 h-2.5 bg-indigo rounded-full pointer-events-none z-[9999] mix-blend-difference will-change-transform transition-transform duration-100"
+        style={{ transform: "translate3d(-100px, -100px, 0)" }}
       />
       <div
-        className="fixed w-9 h-9 border border-indigo-muted rounded-full pointer-events-none z-[9998] transition-all duration-300"
-        style={{ left: cursorPos.x - 18, top: cursorPos.y - 18 }}
+        ref={cursorRingRef}
+        className="fixed top-0 left-0 w-9 h-9 border border-indigo-muted rounded-full pointer-events-none z-[9998] will-change-transform transition-transform duration-300 ease-out"
+        style={{ transform: "translate3d(-100px, -100px, 0)" }}
       />
 
       {/* Navbar */}
