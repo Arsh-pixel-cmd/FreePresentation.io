@@ -46,7 +46,7 @@ async function deleteFromCloud(presentationId: string) {
   }
 }
 
-// ── Store ────────────────────────────────────────────────────
+// ── Store interface ──────────────────────────────────────────
 
 interface PresentationStore {
   presentation: Presentation | null;
@@ -59,7 +59,6 @@ interface PresentationStore {
   reorderSlides: (slides: Slide[]) => void;
 
   setTheme: (themeId: ThemeId) => void;
-
   setTitle: (title: string) => void;
 
   saved: Record<string, Presentation>;
@@ -76,21 +75,32 @@ interface PresentationStore {
 
   isGenerating: boolean;
   setIsGenerating: (b: boolean) => void;
+
+  // Skeleton loader visibility
+  isSkeletonVisible: boolean;
+  setIsSkeletonVisible: (b: boolean) => void;
 }
+
+// ── Store ────────────────────────────────────────────────────
 
 export const usePresentationStore = create<PresentationStore>()(
   persist(
     (set, get) => ({
       presentation: null,
       isGenerating: false,
+      isSkeletonVisible: false,
+      activeSlideIndex: 0,
+      saved: {},
+
+      // Flags
       setIsGenerating: (b) => set({ isGenerating: b }),
+      setIsSkeletonVisible: (b) => set({ isSkeletonVisible: b }),
 
-      setPresentation: (p) =>
-        set({ presentation: p, activeSlideIndex: 0 }),
+      // Presentation
+      setPresentation: (p) => set({ presentation: p, activeSlideIndex: 0 }),
+      clearPresentation: () => set({ presentation: null, activeSlideIndex: 0 }),
 
-      clearPresentation: () =>
-        set({ presentation: null, activeSlideIndex: 0 }),
-
+      // Slides
       updateSlide: (slide) =>
         set((state) => {
           if (!state.presentation) return state;
@@ -118,11 +128,7 @@ export const usePresentationStore = create<PresentationStore>()(
           };
           const saved = { ...state.saved, [updated.id]: updated };
           syncToCloud(updated);
-          return {
-            presentation: updated,
-            saved,
-            activeSlideIndex: slides.length - 1,
-          };
+          return { presentation: updated, saved, activeSlideIndex: slides.length - 1 };
         }),
 
       deleteSlide: (id) =>
@@ -136,10 +142,7 @@ export const usePresentationStore = create<PresentationStore>()(
             updatedAt: new Date().toISOString(),
           };
           const saved = { ...state.saved, [updated.id]: updated };
-          const activeSlideIndex = Math.min(
-            state.activeSlideIndex,
-            slides.length - 1
-          );
+          const activeSlideIndex = Math.min(state.activeSlideIndex, slides.length - 1);
           syncToCloud(updated);
           return { presentation: updated, saved, activeSlideIndex };
         }),
@@ -157,6 +160,7 @@ export const usePresentationStore = create<PresentationStore>()(
           return { presentation: updated, saved };
         }),
 
+      // Theme & title
       setTheme: (themeId) =>
         set((state) => {
           if (!state.presentation) return state;
@@ -183,8 +187,7 @@ export const usePresentationStore = create<PresentationStore>()(
           return { presentation: updated, saved };
         }),
 
-      saved: {},
-
+      // Persistence helpers
       savePresentation: (p) =>
         set((state) => {
           syncToCloud(p);
@@ -203,11 +206,10 @@ export const usePresentationStore = create<PresentationStore>()(
 
       listPresentations: () =>
         Object.values(get().saved).sort(
-          (a, b) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         ),
 
-      // Pull cloud presentations and merge them into the local store
+      // Cloud sync
       loadFromCloud: async () => {
         try {
           const supabase = createClient();
@@ -237,7 +239,7 @@ export const usePresentationStore = create<PresentationStore>()(
             };
           }
 
-          // Merge: cloud wins on conflicts (newer updated_at takes precedence)
+          // Merge: cloud wins on newer updatedAt
           set((state) => {
             const merged = { ...state.saved };
             for (const [id, cloudPres] of Object.entries(cloudSaved)) {
@@ -257,7 +259,6 @@ export const usePresentationStore = create<PresentationStore>()(
         }
       },
 
-      activeSlideIndex: 0,
       setActiveSlideIndex: (i) => set({ activeSlideIndex: i }),
     }),
     {

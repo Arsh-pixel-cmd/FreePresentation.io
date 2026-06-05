@@ -8,6 +8,7 @@ import { Presentation, Slide, ThemeId, SlideTheme } from "@/types/presentation";
 import { THEMES, THEME_LIST } from "@/lib/themes/themes";
 import { duplicatePresentationAction, updatePresentationTitleAction } from "@/app/actions";
 import SlideAnnotationCanvas from "@/components/SlideAnnotationCanvas";
+import SkeletonLoader from "@/components/SkeletonLoader";
 
 export default function EditorPage() {
   const params = useParams();
@@ -298,12 +299,50 @@ export default function EditorPage() {
 
   if (!loaded || !presentation) {
     return (
-      <div style={centeredStyle}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
-          <div style={spinnerStyle} />
-          <div style={{ fontFamily: "monospace", fontSize: 11, color: "#3f3f46", letterSpacing: "0.15em", textTransform: "uppercase" }}>
-            Loading presentation…
+      <div className="min-h-screen bg-surface flex flex-col">
+        {/* Header Skeleton */}
+        <header className="h-[54px] flex items-center justify-between px-5 bg-surface border-b border-surface-border">
+          <div className="font-serif text-base text-cream opacity-50">
+            Free<span className="text-indigo">Presentation</span>
           </div>
+          <div className="flex items-center gap-3">
+            <div className="w-[100px] h-[24px] skeleton-item" />
+            <div className="w-[80px] h-[24px] skeleton-item" />
+            <div className="w-[120px] h-[24px] skeleton-item" />
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-[192px_1fr] flex-1">
+          {/* Sidebar Skeleton */}
+          <aside className="bg-[#060606] border-r border-surface-border p-2.5 max-md:hidden space-y-3">
+            <div className="font-mono text-[9px] tracking-widest uppercase text-zinc-800 mb-3 px-1">Slides</div>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="p-2 border border-transparent space-y-2">
+                <div className="w-12 h-3 skeleton-item" />
+                <div className="w-full aspect-video skeleton-item" />
+              </div>
+            ))}
+          </aside>
+
+          {/* Main Area Skeleton */}
+          <main className="px-6 md:px-12 py-8 bg-surface space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-16 h-7 skeleton-item" />
+              <div className="w-16 h-7 skeleton-item" />
+              <div className="w-16 h-7 skeleton-item" />
+              <div className="ml-auto w-24 h-7 skeleton-item" />
+            </div>
+
+            {/* Slide Canvas Placeholder */}
+            <div className="w-full max-w-[960px] aspect-video skeleton-item rounded-[4px]" />
+
+            {/* Notes Placeholder */}
+            <div className="w-full max-w-[960px] p-5 bg-[#0a0a0a] border border-surface-border rounded-[3px] space-y-2">
+              <div className="w-24 h-3 skeleton-item" />
+              <div className="w-full h-4 skeleton-item" />
+              <div className="w-3/4 h-4 skeleton-item" />
+            </div>
+          </main>
         </div>
       </div>
     );
@@ -846,11 +885,4 @@ const primaryBtn: React.CSSProperties = {
   background: "#e8e4dc", color: "#080808", border: "none",
   padding: "12px 28px", borderRadius: 3, cursor: "pointer",
   fontFamily: "monospace", fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase",
-};
-const spinnerStyle: React.CSSProperties = {
-  width: 36, height: 36,
-  border: "1px solid rgba(99,102,241,0.3)",
-  borderTop: "1px solid #6366f1",
-  borderRadius: "50%",
-  animation: "spin 1s linear infinite",
 };

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ThemeId } from "@/types/presentation";
 import { THEME_LIST } from "@/lib/themes/themes";
 import { usePresentationStore } from "@/store/presentationStore";
+import SkeletonLoader from "@/components/SkeletonLoader";
 
 type Tab = "prompt" | "upload" | "paste" | "url";
 
@@ -189,14 +190,17 @@ export default function CreatePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="min-h-screen bg-surface flex items-center justify-center"
+        className="min-h-screen bg-surface flex flex-col items-center justify-center px-6"
       >
+        {/* Skeleton placeholder cards */}
+        <div className="w-full max-w-[600px] mb-10">
+          <SkeletonLoader type="rect" count={1} className="skeleton-loader--hero" />
+          <SkeletonLoader type="line" count={4} className="mt-4" />
+        </div>
+
+        {/* Step label */}
         <div className="text-center">
-          <div className="relative w-16 h-16 mx-auto mb-10">
-            <div className="absolute inset-0 border border-indigo/30 border-t-indigo rounded-full animate-spin-slow" />
-            <div className="absolute inset-2 border border-indigo/10 border-t-indigo/50 rounded-full animate-spin-reverse" />
-          </div>
-          <div className="min-h-[40px] mb-7 overflow-hidden">
+          <div className="min-h-[40px] mb-5 overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div
                 key={loadStep}
@@ -204,13 +208,13 @@ export default function CreatePage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="font-serif text-2xl text-cream tracking-tight"
+                className="font-serif text-xl text-cream tracking-tight"
               >
                 {activeSteps[loadStep] || "Processing…"}
               </motion.div>
             </AnimatePresence>
           </div>
-          <div className="flex gap-2 justify-center mb-8">
+          <div className="flex gap-2 justify-center mb-6">
             {activeSteps.map((_, i) => (
               <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors duration-400 ${i <= loadStep ? "bg-indigo" : "bg-zinc-800"}`} />
             ))}
