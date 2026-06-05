@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { ThemeId } from "@/types/presentation";
 import { THEME_LIST } from "@/lib/themes/themes";
@@ -39,7 +40,7 @@ const FULL_GEN_LOAD_STEPS = [
 ];
 
 export default function CreatePage() {
-  const { setPresentation, savePresentation } = usePresentationStore();
+  const { setPresentation, savePresentation, setIsGenerating } = usePresentationStore();
   const [tab, setTab] = useState<Tab>("prompt");
   const [prompt, setPrompt] = useState("");
   const [pasteText, setPasteText] = useState("");
@@ -66,6 +67,7 @@ export default function CreatePage() {
     if (!hasInput) return;
 
     setLoading(true);
+    setIsGenerating(true);
     setLoadingType("outline");
     setLoadStep(0);
     setError(null);
@@ -121,15 +123,17 @@ export default function CreatePage() {
       setError(e?.message || "Outline generation failed. Please try again.");
     } finally {
       setLoading(false);
+      setIsGenerating(false);
       setLoadingType(null);
       clearInterval(interval);
     }
-  }, [tab, prompt, pasteText, urlInput, file, audience, tone, slideCount]);
+  }, [tab, prompt, pasteText, urlInput, file, audience, tone, slideCount, setIsGenerating]);
 
   const handleGeneratePresentation = useCallback(async () => {
     if (!outline) return;
 
     setLoading(true);
+    setIsGenerating(true);
     setLoadingType("presentation");
     setLoadStep(0);
     setError(null);
@@ -160,11 +164,13 @@ export default function CreatePage() {
       console.error(e);
       setError(e?.message || "Failed to expand presentation. Please try again.");
       setLoading(false);
+      setIsGenerating(false);
       setLoadingType(null);
     } finally {
+      setIsGenerating(false);
       clearInterval(interval);
     }
-  }, [outline, themeId, audience, tone, savePresentation, setPresentation]);
+  }, [outline, themeId, audience, tone, savePresentation, setPresentation, setIsGenerating]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -179,14 +185,30 @@ export default function CreatePage() {
   if (loading) {
     const activeSteps = loadingType === "outline" ? OUTLINE_LOAD_STEPS : FULL_GEN_LOAD_STEPS;
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="min-h-screen bg-surface flex items-center justify-center"
+      >
         <div className="text-center">
           <div className="relative w-16 h-16 mx-auto mb-10">
             <div className="absolute inset-0 border border-indigo/30 border-t-indigo rounded-full animate-spin-slow" />
             <div className="absolute inset-2 border border-indigo/10 border-t-indigo/50 rounded-full animate-spin-reverse" />
           </div>
-          <div className="font-serif text-2xl text-cream tracking-tight mb-7 min-h-[36px] transition-opacity duration-300">
-            {activeSteps[loadStep] || "Processing…"}
+          <div className="min-h-[40px] mb-7 overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={loadStep}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                className="font-serif text-2xl text-cream tracking-tight"
+              >
+                {activeSteps[loadStep] || "Processing…"}
+              </motion.div>
+            </AnimatePresence>
           </div>
           <div className="flex gap-2 justify-center mb-8">
             {activeSteps.map((_, i) => (
@@ -200,7 +222,7 @@ export default function CreatePage() {
             </span>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -398,116 +420,126 @@ export default function CreatePage() {
             ))}
           </div>
 
-          <div className="mb-8">
-            {tab === "prompt" && (
-              <div>
-                <textarea
-                  className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] p-5 resize-y font-sans text-[15px] leading-relaxed font-light outline-none transition-colors duration-200 placeholder:text-zinc-700"
-                  placeholder="e.g. The impact of remote collaboration on team productivity…"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  rows={5}
-                />
-                <div className="font-mono text-[10px] tracking-wider uppercase text-zinc-700 mt-5 mb-3">
-                  Or try an example:
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {EXAMPLE_PROMPTS.map((ex) => (
-                    <button
-                      key={ex}
-                      className="bg-transparent border border-surface-border-light text-zinc-500 hover:border-indigo hover:text-indigo-300 hover:bg-indigo/4 px-3.5 py-1.5 rounded-[2px] text-xs cursor-pointer transition-all duration-200 text-left font-sans"
-                      onClick={() => setPrompt(ex)}
-                    >
-                      {ex}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {tab === "upload" && (
-              <div
-                className={`border border-dashed rounded-[3px] px-8 py-12 text-center cursor-pointer transition-all duration-200 ${
-                  dragOver
-                    ? "border-indigo bg-indigo/4"
-                    : file
-                    ? "border-solid border-indigo"
-                    : "border-zinc-800 hover:border-indigo hover:bg-indigo/4"
-                }`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}
-                onClick={() => fileRef.current?.click()}
+          <div className="mb-8 min-h-[260px]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={tab}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
               >
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept=".pdf"
-                  style={{ display: "none" }}
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) setFile(e.target.files[0]);
-                  }}
-                />
-                {file ? (
-                  <div className="flex items-center gap-4 text-left justify-center">
-                    <div className="bg-indigo/10 border border-indigo/30 text-indigo px-3 py-2 rounded-[2px] font-mono text-[11px] tracking-wide">
-                      PDF
+                {tab === "prompt" && (
+                  <div>
+                    <textarea
+                      className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] p-5 resize-y font-sans text-[15px] leading-relaxed font-light outline-none transition-colors duration-200 placeholder:text-zinc-700"
+                      placeholder="e.g. The impact of remote collaboration on team productivity…"
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      rows={5}
+                    />
+                    <div className="font-mono text-[10px] tracking-wider uppercase text-zinc-700 mt-5 mb-3">
+                      Or try an example:
                     </div>
-                    <div>
-                      <div className="text-sm text-cream mb-0.5">{file.name}</div>
-                      <div className="font-mono text-[11px] text-zinc-500">
-                        {(file.size / 1024).toFixed(1)} KB
-                      </div>
-                    </div>
-                    <button
-                      className="bg-transparent border-none text-zinc-500 hover:text-cream text-xl cursor-pointer ml-auto transition-colors duration-200"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFile(null);
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <div className="text-[28px] text-zinc-700 mb-3">↑</div>
-                    <div className="font-serif text-xl text-cream mb-1.5">Drop a PDF here</div>
-                    <div className="text-xs text-zinc-700 font-mono tracking-wide">
-                      or click to browse · PDF only
+                    <div className="flex flex-wrap gap-2">
+                      {EXAMPLE_PROMPTS.map((ex) => (
+                        <button
+                          key={ex}
+                          className="bg-transparent border border-surface-border-light text-zinc-500 hover:border-indigo hover:text-indigo-300 hover:bg-indigo/4 px-3.5 py-1.5 rounded-[2px] text-xs cursor-pointer transition-all duration-200 text-left font-sans"
+                          onClick={() => setPrompt(ex)}
+                        >
+                          {ex}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
-              </div>
-            )}
 
-            {tab === "paste" && (
-              <textarea
-                className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] p-5 resize-y font-sans text-[15px] leading-relaxed font-light outline-none transition-colors duration-200 placeholder:text-zinc-700"
-                placeholder="Paste your notes, outline, or any text here. We'll turn it into slides."
-                value={pasteText}
-                onChange={(e) => setPasteText(e.target.value)}
-                rows={8}
-              />
-            )}
+                {tab === "upload" && (
+                  <div
+                    className={`border border-dashed rounded-[3px] px-8 py-12 text-center cursor-pointer transition-all duration-200 ${
+                      dragOver
+                        ? "border-indigo bg-indigo/4"
+                        : file
+                        ? "border-solid border-indigo"
+                        : "border-zinc-800 hover:border-indigo hover:bg-indigo/4"
+                    }`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOver(true);
+                    }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={handleDrop}
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept=".pdf"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) setFile(e.target.files[0]);
+                      }}
+                    />
+                    {file ? (
+                      <div className="flex items-center gap-4 text-left justify-center">
+                        <div className="bg-indigo/10 border border-indigo/30 text-indigo px-3 py-2 rounded-[2px] font-mono text-[11px] tracking-wide">
+                          PDF
+                        </div>
+                        <div>
+                          <div className="text-sm text-cream mb-0.5">{file.name}</div>
+                          <div className="font-mono text-[11px] text-zinc-500">
+                            {(file.size / 1024).toFixed(1)} KB
+                          </div>
+                        </div>
+                        <button
+                          className="bg-transparent border-none text-zinc-500 hover:text-cream text-xl cursor-pointer ml-auto transition-colors duration-200"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFile(null);
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <div className="text-[28px] text-zinc-700 mb-3">↑</div>
+                        <div className="font-serif text-xl text-cream mb-1.5">Drop a PDF here</div>
+                        <div className="text-xs text-zinc-700 font-mono tracking-wide">
+                          or click to browse · PDF only
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-            {tab === "url" && (
-              <div>
-                <input
-                  type="url"
-                  className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] p-5 font-sans text-[15px] outline-none transition-colors duration-200 placeholder:text-zinc-700"
-                  placeholder="e.g. https://en.wikipedia.org/wiki/Artificial_intelligence"
-                  value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
-                />
-                <div className="font-mono text-[10px] tracking-wider uppercase text-zinc-700 mt-3">
-                  Enter any article, blog post, or webpage URL to scrape and convert to slides.
-                </div>
-              </div>
-            )}
+                {tab === "paste" && (
+                  <textarea
+                    className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] p-5 resize-y font-sans text-[15px] leading-relaxed font-light outline-none transition-colors duration-200 placeholder:text-zinc-700"
+                    placeholder="Paste your notes, outline, or any text here. We'll turn it into slides."
+                    value={pasteText}
+                    onChange={(e) => setPasteText(e.target.value)}
+                    rows={8}
+                  />
+                )}
+
+                {tab === "url" && (
+                  <div>
+                    <input
+                      type="url"
+                      className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] p-5 font-sans text-[15px] outline-none transition-colors duration-200 placeholder:text-zinc-700"
+                      placeholder="e.g. https://en.wikipedia.org/wiki/Artificial_intelligence"
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                    />
+                    <div className="font-mono text-[10px] tracking-wider uppercase text-zinc-700 mt-3">
+                      Enter any article, blog post, or webpage URL to scrape and convert to slides.
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* Customizations: Audience, Tone, and Slide Count */}

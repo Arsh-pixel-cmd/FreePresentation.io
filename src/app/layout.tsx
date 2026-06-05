@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, DM_Mono, DM_Serif_Display } from "next/font/google";
 import "./globals.css";
 import LenisProvider from "@/providers/LenisProvider";
+import CustomCursor from "@/components/CustomCursor";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${dmSans.variable} ${dmMono.variable} ${dmSerifDisplay.variable}`}>
         <LenisProvider>
+          <CustomCursor />
           {children}
         </LenisProvider>
       </body>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 
 function useReveal(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
@@ -156,19 +157,20 @@ function Reveal({ children, delay = 0, className = "" }: {
   delay?: number;
   className?: string;
 }) {
-  const { ref, visible } = useReveal();
   return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(48px)",
-        transition: `opacity 0.7s ease ${delay}s, transform 0.7s cubic-bezier(.22,1,.36,1) ${delay}s`,
+    <motion.div
+      initial={{ opacity: 0, y: 48 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-10%" }}
+      transition={{
+        duration: 0.7,
+        delay,
+        ease: [0.22, 1, 0.36, 1],
       }}
+      className={className}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
@@ -191,23 +193,8 @@ function MiniSlide({ theme }: { theme: typeof THEME_PREVIEWS[0] }) {
 }
 
 export default function LandingPage() {
-  const cursorDotRef = useRef<HTMLDivElement>(null);
-  const cursorRingRef = useRef<HTMLDivElement>(null);
   const [heroWord, setHeroWord] = useState(0);
   const heroWords = ["Slides", "Decks", "Pitches", "Ideas"];
-
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (cursorDotRef.current) {
-        cursorDotRef.current.style.transform = `translate3d(${e.clientX - 5}px, ${e.clientY - 5}px, 0)`;
-      }
-      if (cursorRingRef.current) {
-        cursorRingRef.current.style.transform = `translate3d(${e.clientX - 18}px, ${e.clientY - 18}px, 0)`;
-      }
-    };
-    window.addEventListener("mousemove", onMove);
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
 
   useEffect(() => {
     const totalWords = heroWords.length;
@@ -219,18 +206,6 @@ export default function LandingPage() {
 
   return (
     <>
-      {/* Custom cursor */}
-      <div
-        ref={cursorDotRef}
-        className="fixed top-0 left-0 w-2.5 h-2.5 bg-indigo rounded-full pointer-events-none z-[9999] mix-blend-difference will-change-transform transition-transform duration-100"
-        style={{ transform: "translate3d(-100px, -100px, 0)" }}
-      />
-      <div
-        ref={cursorRingRef}
-        className="fixed top-0 left-0 w-9 h-9 border border-indigo-muted rounded-full pointer-events-none z-[9998] will-change-transform transition-transform duration-300 ease-out"
-        style={{ transform: "translate3d(-100px, -100px, 0)" }}
-      />
-
       {/* Navbar */}
       <nav className="fixed top-0 inset-x-0 z-[100] flex items-center justify-between px-12 py-5 border-b border-white/[0.04] backdrop-blur-xl bg-surface/70">
         <div className="font-serif text-lg tracking-tight text-cream">

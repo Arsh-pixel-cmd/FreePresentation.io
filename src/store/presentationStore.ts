@@ -73,12 +73,17 @@ interface PresentationStore {
 
   activeSlideIndex: number;
   setActiveSlideIndex: (i: number) => void;
+
+  isGenerating: boolean;
+  setIsGenerating: (b: boolean) => void;
 }
 
 export const usePresentationStore = create<PresentationStore>()(
   persist(
     (set, get) => ({
       presentation: null,
+      isGenerating: false,
+      setIsGenerating: (b) => set({ isGenerating: b }),
 
       setPresentation: (p) =>
         set({ presentation: p, activeSlideIndex: 0 }),
