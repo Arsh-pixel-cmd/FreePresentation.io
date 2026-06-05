@@ -18,7 +18,9 @@ export default function CustomCursor() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
     document.body.classList.add("custom-cursor-active");
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -77,6 +79,7 @@ export default function CustomCursor() {
     animationFrameId = requestAnimationFrame(updateCursor);
 
     return () => {
+      clearTimeout(timer);
       document.body.classList.remove("custom-cursor-active");
       window.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseleave", handleMouseLeave);
