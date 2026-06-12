@@ -64,3 +64,5 @@ Thumbs.db
 # Unrelated and temporary workspace folders
 /mnt/
 .gemini/
+.agent/
+openspec/
