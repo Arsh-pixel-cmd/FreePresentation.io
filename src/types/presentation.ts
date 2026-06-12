@@ -35,6 +35,8 @@ export interface Slide {
   image?: string
   imageAlt?: string
   imageQuery?: string
+  imageCredit?: string
+  imageCreditUrl?: string
   speakerNotes?: string
   stats?: { label: string; value: string }[]
   quote?: string

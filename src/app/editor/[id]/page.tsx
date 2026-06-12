@@ -653,6 +653,15 @@ function SlideCanvasRenderer({
           {slide.title}
         </h2>
       </div>
+      {slide.imageCredit && (
+        <div style={{ position: "absolute", bottom: 8, right: 8, fontSize: "clamp(6px, 0.8vw, 10px)", fontFamily: "monospace", background: "rgba(0,0,0,0.5)", color: "rgba(255,255,255,0.8)", padding: "2px 6px", borderRadius: 2, zIndex: 10 }}>
+          {slide.imageCreditUrl ? (
+            <a href={slide.imageCreditUrl} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{slide.imageCredit}</a>
+          ) : (
+            slide.imageCredit
+          )}
+        </div>
+      )}
     </div>
   );
 
@@ -715,10 +724,21 @@ function SlideCanvasRenderer({
             <p key={i} style={{ fontSize: "clamp(7px,1vw,11px)", color: theme.muted, marginBottom: "3%", lineHeight: 1.6 }}>{b}</p>
           ))}
         </div>
-        <div style={{ flex: "0 0 48%", overflow: "hidden" }}>
+        <div style={{ flex: "0 0 48%", overflow: "hidden", position: "relative" }}>
           {slide.image
             ? /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={slide.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <>
+                <img src={slide.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                {slide.imageCredit && (
+                  <div style={{ position: "absolute", bottom: 8, right: 8, fontSize: "clamp(6px, 0.8vw, 10px)", fontFamily: "monospace", background: "rgba(0,0,0,0.5)", color: "rgba(255,255,255,0.8)", padding: "2px 6px", borderRadius: 2, zIndex: 10 }}>
+                    {slide.imageCreditUrl ? (
+                      <a href={slide.imageCreditUrl} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{slide.imageCredit}</a>
+                    ) : (
+                      slide.imageCredit
+                    )}
+                  </div>
+                )}
+              </>
             : <div style={{ width: "100%", height: "100%", background: theme.surface, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <span style={{ color: theme.border, fontFamily: "monospace", fontSize: 11 }}>No image</span>
               </div>
@@ -744,9 +764,18 @@ function SlideCanvasRenderer({
           ))}
         </div>
         {slide.image && (
-          <div style={{ borderRadius: 3, overflow: "hidden", maxHeight: "65%", alignSelf: "start" }}>
+          <div style={{ borderRadius: 3, overflow: "hidden", maxHeight: "65%", alignSelf: "start", position: "relative" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={slide.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            {slide.imageCredit && (
+              <div style={{ position: "absolute", bottom: 8, right: 8, fontSize: "clamp(6px, 0.8vw, 10px)", fontFamily: "monospace", background: "rgba(0,0,0,0.5)", color: "rgba(255,255,255,0.8)", padding: "2px 6px", borderRadius: 2, zIndex: 10 }}>
+                {slide.imageCreditUrl ? (
+                  <a href={slide.imageCreditUrl} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{slide.imageCredit}</a>
+                ) : (
+                  slide.imageCredit
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -843,7 +872,7 @@ function EditSlideModal({
           <input
             className="w-full bg-[#0a0a0a] border border-surface-border-light focus:border-indigo text-cream rounded-[2px] px-3.5 py-2.5 font-sans text-xs md:text-sm outline-none transition-colors duration-200"
             value={draft.image || ""}
-            onChange={(e) => setDraft({ ...draft, image: e.target.value })}
+            onChange={(e) => setDraft({ ...draft, image: e.target.value, imageCredit: "", imageCreditUrl: "" })}
             placeholder="https://images.unsplash.com/…"
           />
           {draft.image && (

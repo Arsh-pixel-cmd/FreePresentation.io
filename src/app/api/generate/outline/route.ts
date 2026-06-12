@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { ThemeId } from "@/types/presentation";
 import { checkRateLimit } from "@/lib/queue/upstash";
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+const NVIDIA_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes for outline (smaller task)
+const NVIDIA_MAX_RETRIES = 2;
+
 function getOutlineSystemPrompt(audience: string, tone: string, slideCount: number) {
   return `You are a professional presentation architect.
 Your job is to generate a logical, highly structured presentation outline JSON from a user's prompt or text source.
@@ -35,6 +41,108 @@ JSON SCHEMA (return this exact structure):
 }`;
 }
 
+// ---------------------------------------------------------------------------
+// NVIDIA streaming helper — avoids headers timeout by reading SSE chunks
+// ---------------------------------------------------------------------------
+async function callNvidiaStreaming(
+  systemPrompt: string,
+  userPrompt: string,
+  nvidiaKey: string,
+  model: string,
+): Promise<string> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= NVIDIA_MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const delay = Math.min(2000 * Math.pow(2, attempt - 1), 8000);
+      console.log(`NVIDIA outline retry ${attempt}/${NVIDIA_MAX_RETRIES} after ${delay}ms…`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), NVIDIA_TIMEOUT_MS);
+
+    try {
+      const res = await fetch(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${nvidiaKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt },
+            ],
+            temperature: 0.7,
+            max_tokens: 4096,
+            stream: true,
+          }),
+          signal: controller.signal,
+        },
+      );
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`NVIDIA outline API error (attempt ${attempt}):`, errorText);
+        lastError = new Error(`NVIDIA API returned ${res.status}: ${errorText}`);
+        continue;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("NVIDIA response has no body stream");
+
+      const decoder = new TextDecoder();
+      let assembled = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data:")) continue;
+
+          const payload = trimmed.slice(5).trim();
+          if (payload === "[DONE]") continue;
+
+          try {
+            const chunk = JSON.parse(payload);
+            const delta = chunk.choices?.[0]?.delta?.content;
+            if (delta) assembled += delta;
+          } catch {
+            // skip malformed chunks
+          }
+        }
+      }
+
+      clearTimeout(timeout);
+      return assembled;
+    } catch (err: any) {
+      clearTimeout(timeout);
+      if (err?.name === "AbortError") {
+        lastError = new Error("NVIDIA outline API request timed out");
+      } else {
+        lastError = err;
+      }
+      console.error(`NVIDIA outline fetch error (attempt ${attempt}):`, lastError);
+    }
+  }
+
+  throw lastError || new Error("NVIDIA outline API failed after retries");
+}
+
+// ---------------------------------------------------------------------------
+// POST handler
+// ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -58,40 +166,24 @@ export async function POST(req: NextRequest) {
     const cleanedText = text.trim().substring(0, 5000);
     const systemPrompt = getOutlineSystemPrompt(audience, tone, slideCount);
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text: `${systemPrompt}\n\nCreate a presentation outline about:\n${cleanedText}`,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 4096,
-          },
-        }),
-      }
-    );
-
-    if (!geminiRes.ok) {
-      return await generateOutlineWithDeepSeek(cleanedText, audience, tone, slideCount);
+    const rawKey = process.env["NVIDIA_diffusiongemma-26b-a4b-it_API_KEY"];
+    if (!rawKey) {
+      return NextResponse.json({ error: "NVIDIA API Key not configured" }, { status: 500 });
     }
+    const nvidiaKey = rawKey.startsWith("nvapi-") ? rawKey : `nvapi-${rawKey}`;
 
-    const geminiData = await geminiRes.json();
-    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    // --- Call NVIDIA with streaming + retries ---
+    const rawText = await callNvidiaStreaming(
+      systemPrompt,
+      `Create a presentation outline about:\n${cleanedText}`,
+      nvidiaKey,
+      "google/gemma-4-31b-it",
+    );
 
     const outlineData = parseJSON(rawText);
     if (!outlineData || !Array.isArray(outlineData.slides) || outlineData.slides.length === 0) {
-      return await generateOutlineWithDeepSeek(cleanedText, audience, tone, slideCount);
+      console.error("Failed to parse Nvidia outline response. Raw text was:", rawText.slice(0, 500));
+      return NextResponse.json({ error: "Failed to generate a valid presentation outline structure" }, { status: 502 });
     }
 
     return NextResponse.json({ outline: outlineData });
@@ -101,39 +193,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function generateOutlineWithDeepSeek(text: string, audience: string, tone: string, slideCount: number) {
-  const systemPrompt = getOutlineSystemPrompt(audience, tone, slideCount);
-
-  const res = await fetch("https://api.deepseek.com/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "deepseek-chat",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Create a presentation outline about:\n${text}` },
-      ],
-      temperature: 0.7,
-      max_tokens: 4096,
-    }),
-  });
-
-  if (!res.ok) throw new Error("Primary and backup generation engines failed to generate outline");
-
-  const data = await res.json();
-  const rawText = data.choices?.[0]?.message?.content || "";
-  const outlineData = parseJSON(rawText);
-
-  if (!outlineData || !Array.isArray(outlineData.slides) || outlineData.slides.length === 0) {
-    throw new Error("Failed to parse DeepSeek outline response");
-  }
-
-  return NextResponse.json({ outline: outlineData });
-}
-
+// ---------------------------------------------------------------------------
+// JSON parser — tolerant of markdown wrappers
+// ---------------------------------------------------------------------------
 function parseJSON(raw: string): any {
   try {
     const cleaned = raw.replace(/```json|```/g, "").trim();
@@ -150,3 +212,4 @@ function parseJSON(raw: string): any {
     return null;
   }
 }
+
