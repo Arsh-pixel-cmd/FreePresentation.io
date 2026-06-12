@@ -1,8 +1,10 @@
-# FreePresentation
+# FreePresentation.io
 
 **AI-powered presentation builder. 100% free. No watermarks. No limits.**
 
 Build beautiful, export-ready presentations from a topic, a PDF upload, or pasted notes — in under 30 seconds.
+
+> **Live:** [freepresentation.io](https://freepresentation.io)
 
 ---
 
@@ -10,87 +12,173 @@ Build beautiful, export-ready presentations from a topic, a PDF upload, or paste
 
 | Feature | Details |
 |---------|---------|
-| **AI Generation** | Gemini Flash (primary) → DeepSeek (fallback) |
+| **AI Generation** | NVIDIA Nemotron 3 Ultra (primary) → Google Gemma 4 31B (fallback) via NVIDIA API |
 | **Input Modes** | Prompt · PDF Upload · Paste text |
-| **Slide Count** | 10–15 slides per presentation |
+| **Slide Count** | Configurable (default 12 slides) |
 | **Layouts** | title · content · two-col · image-right · image-left · image-full · quote · stats |
 | **Themes** | Obsidian · Arctic · Aurora · Ember · Sage · Slate |
 | **Images** | Unsplash API + Pollinations.ai fallback (no key required) |
-| **Editor** | Click to edit · drag to reorder · add / delete slides |
+| **Editor** | Click to edit · drag to reorder · add / delete slides · annotation canvas |
 | **Export** | .pptx (pptxgenjs) · .pdf (jsPDF) — no watermarks |
+| **Auth** | Supabase authentication (email + social) |
 | **Queue** | Upstash Redis + QStash for rate limiting |
 | **Monitoring** | Sentry (errors) + PostHog (analytics) |
 
 ---
 
+## 📋 Prerequisites
+
+Before you begin, make sure you have the following installed:
+
+| Tool | Version | Check Command | Install |
+|------|---------|---------------|---------|
+| **Node.js** | v18.17+ (v20 LTS recommended) | `node -v` | [nodejs.org](https://nodejs.org) |
+| **npm** | v9+ (comes with Node) | `npm -v` | Bundled with Node.js |
+| **Git** | Any recent version | `git --version` | [git-scm.com](https://git-scm.com) |
+
+---
+
 ## ⚡ Quick Start
 
-### 1. Clone and install
+### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourname/freepresentation.git
-cd freepresentation
+git clone https://github.com/Arsh-pixel-cmd/FreePresentation.io.git
+cd FreePresentation.io
+```
+
+### 2. Install dependencies
+
+```bash
 npm install
 ```
 
-### 2. Set up environment variables
+> This installs all packages listed in `package.json`. It may take a minute on the first run.
+
+### 3. Set up environment variables
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
-Fill in the values in `.env.local`. The only **required** keys to get started are:
+Open `.env` in your editor and fill in your API keys. See the **[Environment Variables](#-environment-variables)** section below for details on each key.
 
+**Minimum required to run:**
+
+```env
+# At least ONE of these NVIDIA keys (get free keys at https://build.nvidia.com)
+NVIDIA_nemotron-3-ultra-550b-a55b_API_KEY=nvapi-xxxxxxxxxxxxx
+NVIDIA_diffusiongemma-26b-a4b-it_API_KEY=nvapi-xxxxxxxxxxxxx
+
+# App URL (keep as-is for local dev)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
-GEMINI_API_KEY=        # Google Gemini (free tier works)
-```
 
-Everything else is optional — the app degrades gracefully without Unsplash, Upstash, etc.
-
-### 3. Run development server
+### 4. Run the development server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000) in your browser. 🎉
+
+### 5. (Optional) Run other commands
+
+```bash
+# Type-check the project (no output = no errors)
+npm run type-check
+
+# Lint the codebase
+npm run lint
+
+# Create a production build
+npm run build
+
+# Start the production server (run build first)
+npm start
+```
+
+---
+
+## 🔑 Environment Variables
+
+All environment variables are documented in [`.env.example`](.env.example). Copy it to `.env` and fill in your values.
+
+### Required Keys
+
+| Variable | Where to Get It | Purpose |
+|----------|----------------|---------|
+| `NVIDIA_nemotron-3-ultra-550b-a55b_API_KEY` | [NVIDIA Build](https://build.nvidia.com) → Search "Nemotron" → Get API Key | Primary AI model for slide generation |
+| `NVIDIA_diffusiongemma-26b-a4b-it_API_KEY` | [NVIDIA Build](https://build.nvidia.com) → Search "Gemma" → Get API Key | Backup AI model (used if primary times out) |
+
+> **Note:** You need **at least one** NVIDIA key. Both are free. Having both gives you automatic failover.
+
+### Optional Keys (app works without these)
+
+| Variable | Where to Get It | What Happens Without It |
+|----------|----------------|------------------------|
+| `UNSPLASH_ACCESS_KEY` | [Unsplash Developers](https://unsplash.com/developers) → Create App | Falls back to Pollinations.ai for images |
+| `UNSPLASH_SECRET_KEY` | Same as above | Falls back to Pollinations.ai for images |
+| `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) | PDF OCR parsing uses basic extraction only |
+| `UPSTASH_REDIS_REST_URL` | [Upstash Console](https://console.upstash.com) → Create Redis DB | Rate limiting is skipped |
+| `UPSTASH_REDIS_REST_TOKEN` | Same as above | Rate limiting is skipped |
+| `QSTASH_TOKEN` | [Upstash Console](https://console.upstash.com) → QStash tab | Background job queue disabled |
+| `NEXT_PUBLIC_SUPABASE_URL` | [Supabase Dashboard](https://supabase.com/dashboard) → New Project | Auth and DB persistence disabled |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Same as above → Settings → API | Auth and DB persistence disabled |
+| `NEXT_PUBLIC_SENTRY_DSN` | [Sentry](https://sentry.io) → Create Project | Error tracking disabled |
+| `NEXT_PUBLIC_POSTHOG_KEY` | [PostHog](https://posthog.com) → Project Settings | Analytics disabled |
 
 ---
 
 ## 🗂️ Project Structure
 
 ```
-src/
-├── app/
-│   ├── page.tsx                    → Landing page (/)
-│   ├── page-landing.tsx            → Landing component
-│   ├── create/
-│   │   ├── page.tsx                → Create route (/create)
-│   │   └── create-page.tsx         → Create component
-│   ├── editor/[id]/
-│   │   └── page.tsx                → Editor route (/editor/:id)
-│   ├── api/
-│   │   ├── generate/route.ts       → POST: AI slide generation
-│   │   ├── images/route.ts         → GET/POST: image fetching
-│   │   ├── parse/route.ts          → POST: PDF text extraction
-│   │   └── export/
-│   │       ├── pptx/route.ts       → POST: PPTX export
-│   │       └── pdf/route.ts        → POST: PDF export
-│   ├── globals.css
-│   └── layout.tsx
-├── components/
-│   └── editor/
-│       └── SlideEditor.tsx         → Reusable editor component
-├── lib/
-│   ├── themes/themes.ts            → 6 theme configs
-│   └── queue/upstash.ts            → Rate limiting + job queue
-├── store/
-│   └── presentationStore.ts        → Zustand state + localStorage
-├── types/
-│   └── presentation.ts             → All TypeScript types
-└── monitoring/
-    ├── sentry.ts                   → Sentry error tracking
-    └── posthog.ts                  → PostHog analytics
+FreePresentation.io/
+├── src/
+│   ├── app/
+│   │   ├── page.tsx                    → Landing page (/)
+│   │   ├── layout.tsx                  → Root layout + providers
+│   │   ├── globals.css                 → Global styles + Tailwind
+│   │   ├── actions.ts                  → Server actions
+│   │   ├── create/                     → /create route
+│   │   ├── editor/                     → /editor/:id route
+│   │   ├── login/                      → /login route (Supabase auth)
+│   │   └── api/
+│   │       ├── generate/route.ts       → POST: AI slide generation (NVIDIA)
+│   │       ├── generate/outline/       → POST: Outline-based generation
+│   │       ├── generate/worker/        → Background generation worker
+│   │       ├── images/route.ts         → GET/POST: Unsplash image fetching
+│   │       ├── parse/route.ts          → POST: PDF text extraction
+│   │       ├── export/                 → PPTX + PDF export endpoints
+│   │       └── auth/                   → Supabase auth callbacks
+│   ├── components/
+│   │   ├── CustomCursor.tsx            → Custom cursor effect
+│   │   ├── SelectionLoader.tsx         → Selection loading animation
+│   │   ├── SkeletonLoader.tsx          → Skeleton placeholder
+│   │   ├── SlideAnnotationCanvas.tsx   → Drawing/annotation on slides
+│   │   └── ui/                         → Reusable UI components (shadcn)
+│   ├── lib/
+│   │   ├── themes/themes.ts            → 6 theme configurations
+│   │   ├── queue/upstash.ts            → Rate limiting + job queue
+│   │   ├── supabase/                   → Supabase client + storage helpers
+│   │   ├── hooks/                      → Custom React hooks
+│   │   └── utils.ts                    → Utility functions
+│   ├── store/
+│   │   └── presentationStore.ts        → Zustand state management
+│   ├── providers/                      → React context providers
+│   ├── monitoring/
+│   │   ├── sentry.ts                   → Sentry error tracking
+│   │   └── posthog.ts                  → PostHog analytics
+│   └── types/
+│       └── presentation.ts             → TypeScript type definitions
+├── supabase/
+│   └── migrations/                     → Database migration files
+├── storage/                            → Local file storage
+├── .env.example                        → Environment variable template
+├── next.config.mjs                     → Next.js configuration
+├── tailwind.config.ts                  → Tailwind CSS configuration
+├── tsconfig.json                       → TypeScript configuration
+└── package.json                        → Dependencies & scripts
 ```
 
 ---
@@ -100,11 +188,11 @@ src/
 ```
 User Input (prompt / PDF / paste)
         ↓
-/api/parse (if PDF) → extract text with pdf.js + tesseract.js
+/api/parse (if PDF) → extract text with pdf.js + tesseract.js OCR
         ↓
-/api/generate → Gemini Flash builds 12-slide JSON
-        ↓  (fallback: DeepSeek)
-For each slide: fetch image from Unsplash → Pollinations.ai
+/api/generate → NVIDIA Nemotron 3 Ultra builds slide JSON
+        ↓  (fallback: Google Gemma 4 31B via NVIDIA)
+For each slide: fetch image from Unsplash → Pollinations.ai fallback
         ↓
 Return Presentation object → save to Zustand store
         ↓
@@ -126,56 +214,26 @@ Redirect to /editor/:id
 
 ---
 
-## 📦 Key Dependencies
+## 📦 Tech Stack
 
-| Package | Purpose |
-|---------|---------|
-| `next` 14 | Framework (App Router) |
-| `zustand` | State management |
-| `pptxgenjs` | PowerPoint export |
-| `jspdf` | PDF export |
-| `pdfjs-dist` | PDF text extraction |
-| `tesseract.js` | OCR for scanned PDFs |
-| `@upstash/redis` | Rate limiting |
-| `@upstash/qstash` | Job queuing |
-| `lenis` | Smooth scroll |
-| `framer-motion` | Animations |
-| `@dnd-kit/*` | Drag-to-reorder |
-| `@sentry/nextjs` | Error tracking |
-| `posthog-js` | Analytics |
-
----
-
-## 🔑 API Keys Setup
-
-### Google Gemini (Required)
-
-1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Create a new API key
-3. Add to `.env.local` as `GEMINI_API_KEY`
-
-### DeepSeek (Optional fallback)
-
-1. Go to [DeepSeek Platform](https://platform.deepseek.com/api_keys)
-2. Create API key
-3. Add as `DEEPSEEK_API_KEY`
-
-### Unsplash (Optional)
-
-1. Go to [Unsplash Developers](https://unsplash.com/developers)
-2. Create an app
-3. Add Access Key as `UNSPLASH_ACCESS_KEY`
-
-> **Note:** Without this, Pollinations.ai is used automatically. No setup needed.
-
-### Upstash (Optional)
-
-1. Go to [Upstash Console](https://console.upstash.com)
-2. Create a Redis database
-3. Create a QStash instance
-4. Add the URLs and tokens to `.env.local`
-
-> **Note:** Without this, rate limiting is skipped gracefully.
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `next` | 16 | Framework (App Router, React Server Components) |
+| `react` | 19 | UI library |
+| `tailwindcss` | 3.4 | Utility-first CSS |
+| `zustand` | 4.5 | Lightweight state management |
+| `framer-motion` | 11 | Animations & transitions |
+| `pptxgenjs` | 3.12 | PowerPoint (.pptx) export |
+| `jspdf` | 4.2 | PDF export |
+| `pdfjs-dist` | 4.4 | PDF text extraction |
+| `tesseract.js` | 5.1 | OCR for scanned PDFs |
+| `@supabase/supabase-js` | 2.x | Auth + database |
+| `@upstash/redis` | 1.x | Rate limiting |
+| `@upstash/qstash` | 2.x | Background job queue |
+| `@dnd-kit/*` | latest | Drag-to-reorder slides |
+| `lenis` | 1.x | Smooth scrolling |
+| `@sentry/nextjs` | 10.x | Error tracking |
+| `posthog-js` | 1.x | Product analytics |
 
 ---
 
@@ -183,46 +241,85 @@ Redirect to /editor/:id
 
 ### Vercel (Recommended)
 
-```bash
-npm install -g vercel
-vercel --prod
-```
+1. **Push your code to GitHub** (if not already):
+   ```bash
+   git add .
+   git commit -m "ready to deploy"
+   git push origin main
+   ```
 
-Add all environment variables in Vercel Dashboard → Settings → Environment Variables.
+2. **Import the project on Vercel:**
+   - Go to [vercel.com/new](https://vercel.com/new)
+   - Select your GitHub repo
+   - Vercel auto-detects Next.js
 
-### Important Vercel settings
+3. **Add environment variables:**
+   - Go to **Settings → Environment Variables** in your Vercel project
+   - Add all the keys from your `.env` file
+   - Make sure to update `NEXT_PUBLIC_APP_URL` to your production domain
 
-- **Function timeout**: Set to 60s for `/api/generate` and `/api/export/*` (Pro plan)
-- **Max request size**: Set to 10MB for PDF upload support
+4. **Deploy:**
+   ```bash
+   npx vercel --prod
+   ```
+
+### Important Vercel Settings
+
+- **Function timeout**: Set to 60s+ for `/api/generate` and `/api/export/*` (Pro plan recommended)
+- **Max request size**: Ensure 10MB+ for PDF upload support
+
+### Other Platforms
+
+The app is a standard Next.js 16 project. It can be deployed to any platform that supports Node.js:
+- **Railway**: `railway up`
+- **Render**: Connect GitHub repo, set build command to `npm run build`, start command to `npm start`
+- **Docker**: Build with `FROM node:20-alpine`, run `npm run build && npm start`
 
 ---
 
-## 📋 What You Need to Add (Auth + DB)
+## 🛠️ Troubleshooting
 
-The project is set up to accept your own auth and database. Suggested stack:
+| Issue | Solution |
+|-------|----------|
+| `npm install` fails | Make sure you're on Node.js v18.17+. Run `node -v` to check. |
+| "NVIDIA API Key not configured" | Add at least one NVIDIA key to your `.env` file. |
+| Images not loading | Unsplash key missing — this is fine, Pollinations.ai will be used as fallback. |
+| Rate limit errors locally | Either add Upstash keys or remove rate limiting (it gracefully skips if unconfigured). |
+| PDF parsing fails | Ensure `pdfjs-dist` installed correctly. Try `npm rebuild`. |
+| Build errors with Sentry | Sentry config is optional. Set `SENTRY_ORG` and `SENTRY_PROJECT` or remove `withSentryConfig` wrapper in `next.config.mjs`. |
+| Port 3000 already in use | Run with a different port: `npx next dev -p 3001` |
 
-```
-Auth:     NextAuth.js (v5) or Clerk
-Database: Supabase (PostgreSQL) or PlanetScale (MySQL)
-ORM:      Prisma or Drizzle
-```
+---
 
-Add a `presentations` table:
+## 🤝 Contributing
 
-```sql
-CREATE TABLE presentations (
-  id          TEXT PRIMARY KEY,
-  user_id     TEXT,
-  title       TEXT NOT NULL,
-  topic       TEXT,
-  slides      JSONB NOT NULL,
-  theme_id    TEXT NOT NULL,
-  created_at  TIMESTAMPTZ DEFAULT NOW(),
-  updated_at  TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
-Replace `localStorage` persistence in `presentationStore.ts` with API calls to your DB.
+1. **Fork** the repo
+2. **Clone** your fork:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/FreePresentation.io.git
+   cd FreePresentation.io
+   ```
+3. **Create a branch**:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+4. **Install & run**:
+   ```bash
+   npm install
+   cp .env.example .env
+   # Fill in your .env keys
+   npm run dev
+   ```
+5. **Make your changes** and test them
+6. **Commit** with a descriptive message:
+   ```bash
+   git add .
+   git commit -m "feat: add your feature description"
+   ```
+7. **Push** and open a Pull Request:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
 
 ---
 
@@ -245,4 +342,4 @@ MIT — free to use, modify, and distribute.
 
 ---
 
-Built with  using Next.js 14, Gemini, and zero paywalls.
+Built with ❤️ using Next.js 16, NVIDIA AI, and zero paywalls.
