@@ -32,7 +32,7 @@ export async function verifyTurnstileToken(
     const formData = new FormData();
     formData.append("secret", secretKey);
     formData.append("response", token);
-    if (remoteIp) {
+    if (remoteIp && remoteIp !== "anonymous" && /^[0-9a-fA-F:.]+$/.test(remoteIp)) {
       formData.append("remoteip", remoteIp);
     }
 
