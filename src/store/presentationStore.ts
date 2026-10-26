@@ -1,50 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Presentation, Slide, ThemeId } from "@/types/presentation";
-import { createClient } from "@/lib/supabase/client";
-
-// ── Supabase cloud sync helpers ──────────────────────────────
-// These fire-and-forget — LocalStorage is the source of truth for speed,
-// Supabase is the durable backup when a user is authenticated.
-
-async function syncToCloud(presentation: Presentation) {
-  try {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return; // guest mode — skip cloud sync
-
-    await supabase.from("presentations").upsert(
-      {
-        id: presentation.id,
-        user_id: user.id,
-        title: presentation.title,
-        topic: presentation.topic,
-        theme_id: presentation.themeId,
-        slides: presentation.slides,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "id" }
-    );
-  } catch (err) {
-    console.warn("[Cloud Sync] Failed to sync presentation:", err);
-  }
-}
-
-async function deleteFromCloud(presentationId: string) {
-  try {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    await supabase.from("presentations").delete().eq("id", presentationId);
-  } catch (err) {
-    console.warn("[Cloud Sync] Failed to delete presentation:", err);
-  }
-}
 
 // ── Store interface ──────────────────────────────────────────
 
@@ -61,46 +17,34 @@ interface PresentationStore {
   setTheme: (themeId: ThemeId) => void;
   setTitle: (title: string) => void;
 
+  // Local persistence helpers
   saved: Record<string, Presentation>;
   savePresentation: (p: Presentation) => void;
-  getPresentation: (id: string) => Presentation | null;
   deletePresentation: (id: string) => void;
   listPresentations: () => Presentation[];
 
-  // Cloud sync
-  loadFromCloud: () => Promise<void>;
-
+  // Editor UI state
   activeSlideIndex: number;
   setActiveSlideIndex: (i: number) => void;
-
-  isGenerating: boolean;
-  setIsGenerating: (b: boolean) => void;
-
-  // Skeleton loader visibility
-  isSkeletonVisible: boolean;
-  setIsSkeletonVisible: (b: boolean) => void;
 }
-
-// ── Store ────────────────────────────────────────────────────
 
 export const usePresentationStore = create<PresentationStore>()(
   persist(
     (set, get) => ({
       presentation: null,
-      isGenerating: false,
-      isSkeletonVisible: false,
-      activeSlideIndex: 0,
       saved: {},
+      activeSlideIndex: 0,
 
-      // Flags
-      setIsGenerating: (b) => set({ isGenerating: b }),
-      setIsSkeletonVisible: (b) => set({ isSkeletonVisible: b }),
+      setPresentation: (p) => {
+        set((state) => ({
+          presentation: p,
+          saved: { ...state.saved, [p.id]: p },
+          activeSlideIndex: 0,
+        }));
+      },
 
-      // Presentation
-      setPresentation: (p) => set({ presentation: p, activeSlideIndex: 0 }),
       clearPresentation: () => set({ presentation: null, activeSlideIndex: 0 }),
 
-      // Slides
       updateSlide: (slide) =>
         set((state) => {
           if (!state.presentation) return state;
@@ -113,7 +57,6 @@ export const usePresentationStore = create<PresentationStore>()(
             updatedAt: new Date().toISOString(),
           };
           const saved = { ...state.saved, [updated.id]: updated };
-          syncToCloud(updated);
           return { presentation: updated, saved };
         }),
 
@@ -127,7 +70,6 @@ export const usePresentationStore = create<PresentationStore>()(
             updatedAt: new Date().toISOString(),
           };
           const saved = { ...state.saved, [updated.id]: updated };
-          syncToCloud(updated);
           return { presentation: updated, saved, activeSlideIndex: slides.length - 1 };
         }),
 
@@ -143,7 +85,6 @@ export const usePresentationStore = create<PresentationStore>()(
           };
           const saved = { ...state.saved, [updated.id]: updated };
           const activeSlideIndex = Math.min(state.activeSlideIndex, slides.length - 1);
-          syncToCloud(updated);
           return { presentation: updated, saved, activeSlideIndex };
         }),
 
@@ -156,7 +97,6 @@ export const usePresentationStore = create<PresentationStore>()(
             updatedAt: new Date().toISOString(),
           };
           const saved = { ...state.saved, [updated.id]: updated };
-          syncToCloud(updated);
           return { presentation: updated, saved };
         }),
 
@@ -170,7 +110,6 @@ export const usePresentationStore = create<PresentationStore>()(
             updatedAt: new Date().toISOString(),
           };
           const saved = { ...state.saved, [updated.id]: updated };
-          syncToCloud(updated);
           return { presentation: updated, saved };
         }),
 
@@ -183,24 +122,19 @@ export const usePresentationStore = create<PresentationStore>()(
             updatedAt: new Date().toISOString(),
           };
           const saved = { ...state.saved, [updated.id]: updated };
-          syncToCloud(updated);
           return { presentation: updated, saved };
         }),
 
-      // Persistence helpers
+      // Persistence helpers (pure in-browser localStorage)
       savePresentation: (p) =>
-        set((state) => {
-          syncToCloud(p);
-          return { saved: { ...state.saved, [p.id]: p } };
-        }),
-
-      getPresentation: (id) => get().saved[id] || null,
+        set((state) => ({
+          saved: { ...state.saved, [p.id]: p },
+        })),
 
       deletePresentation: (id) =>
         set((state) => {
           const saved = { ...state.saved };
           delete saved[id];
-          deleteFromCloud(id);
           return { saved };
         }),
 
@@ -208,56 +142,6 @@ export const usePresentationStore = create<PresentationStore>()(
         Object.values(get().saved).sort(
           (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         ),
-
-      // Cloud sync
-      loadFromCloud: async () => {
-        try {
-          const supabase = createClient();
-          const {
-            data: { user },
-          } = await supabase.auth.getUser();
-          if (!user) return;
-
-          const { data, error } = await supabase
-            .from("presentations")
-            .select("*")
-            .eq("user_id", user.id)
-            .order("updated_at", { ascending: false });
-
-          if (error || !data) return;
-
-          const cloudSaved: Record<string, Presentation> = {};
-          for (const row of data) {
-            cloudSaved[row.id] = {
-              id: row.id,
-              title: row.title,
-              topic: row.topic || "",
-              themeId: row.theme_id as ThemeId,
-              slides: row.slides as Slide[],
-              createdAt: row.created_at,
-              updatedAt: row.updated_at,
-            };
-          }
-
-          // Merge: cloud wins on newer updatedAt
-          set((state) => {
-            const merged = { ...state.saved };
-            for (const [id, cloudPres] of Object.entries(cloudSaved)) {
-              const local = merged[id];
-              if (
-                !local ||
-                new Date(cloudPres.updatedAt).getTime() >
-                  new Date(local.updatedAt).getTime()
-              ) {
-                merged[id] = cloudPres;
-              }
-            }
-            return { saved: merged };
-          });
-        } catch (err) {
-          console.warn("[Cloud Sync] Failed to load from cloud:", err);
-        }
-      },
 
       setActiveSlideIndex: (i) => set({ activeSlideIndex: i }),
     }),

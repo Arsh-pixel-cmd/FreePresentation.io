@@ -7,6 +7,7 @@ import { ThemeId } from "@/types/presentation";
 import { THEME_LIST } from "@/lib/themes/themes";
 import { usePresentationStore } from "@/store/presentationStore";
 import SkeletonLoader from "@/components/SkeletonLoader";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 type Tab = "prompt" | "upload" | "paste" | "url";
 
@@ -43,6 +44,7 @@ const FULL_GEN_LOAD_STEPS = [
 export default function CreatePage() {
   const { setPresentation, savePresentation, setIsGenerating } = usePresentationStore();
   const [tab, setTab] = useState<Tab>("prompt");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
   const [pasteText, setPasteText] = useState("");
   const [urlInput, setUrlInput] = useState("");
@@ -110,6 +112,7 @@ export default function CreatePage() {
           audience,
           tone,
           slideCount,
+          turnstileToken,
         }),
       });
 
@@ -128,7 +131,7 @@ export default function CreatePage() {
       setLoadingType(null);
       clearInterval(interval);
     }
-  }, [tab, prompt, pasteText, urlInput, file, audience, tone, slideCount, setIsGenerating]);
+  }, [tab, prompt, pasteText, urlInput, file, audience, tone, slideCount, turnstileToken, setIsGenerating]);
 
   const handleGeneratePresentation = useCallback(async () => {
     if (!outline) return;
@@ -150,6 +153,9 @@ export default function CreatePage() {
       formData.append("themeId", themeId);
       formData.append("audience", audience);
       formData.append("tone", tone);
+      if (turnstileToken) {
+        formData.append("turnstileToken", turnstileToken);
+      }
 
       const res = await fetch("/api/generate", { method: "POST", body: formData });
       const data = await res.json();
@@ -592,6 +598,12 @@ export default function CreatePage() {
               </select>
             </div>
           </div>
+
+          <TurnstileWidget
+            onVerify={setTurnstileToken}
+            onExpire={() => setTurnstileToken(null)}
+            className="mb-4 flex justify-center"
+          />
 
           <button
             className={`group w-full border font-mono text-[13px] tracking-wide uppercase cursor-pointer flex items-center justify-between px-8 py-[18px] rounded-[3px] transition-all duration-250 ${

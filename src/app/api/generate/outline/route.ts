@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ThemeId } from "@/types/presentation";
 import { checkRateLimit } from "@/lib/queue/upstash";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -157,7 +158,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { text, audience = "General Public", tone = "Professional", slideCount = 10 } = await req.json();
+    const body = await req.json();
+    const { text, audience = "General Public", tone = "Professional", slideCount = 10, turnstileToken } = body;
+
+    const token = turnstileToken || req.headers.get("x-turnstile-token");
+    const turnstileResult = await verifyTurnstileToken(token, ip);
+    if (!turnstileResult.success) {
+      return NextResponse.json(
+        { error: turnstileResult.error || "Turnstile verification failed" },
+        { status: 403 }
+      );
+    }
 
     if (!text || !text.trim()) {
       return NextResponse.json({ error: "No topic or content provided" }, { status: 400 });

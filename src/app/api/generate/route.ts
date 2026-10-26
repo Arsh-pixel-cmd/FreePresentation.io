@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Presentation, Slide, ThemeId } from "@/types/presentation";
 import { checkRateLimit } from "@/lib/queue/upstash";
-import { uploadExternalImageToStorage } from "@/lib/supabase/storage";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -217,6 +217,15 @@ export async function POST(req: NextRequest) {
     }
 
     const formData = await req.formData();
+    const turnstileToken = (formData.get("turnstileToken") as string) || req.headers.get("x-turnstile-token");
+    const turnstileResult = await verifyTurnstileToken(turnstileToken, ip);
+    if (!turnstileResult.success) {
+      return NextResponse.json(
+        { error: turnstileResult.error || "Turnstile verification failed" },
+        { status: 403 }
+      );
+    }
+
     const mode = formData.get("mode") as string;
     const themeId = (formData.get("themeId") as ThemeId) || "obsidian";
     const audience = (formData.get("audience") as string) || "General Public";
@@ -375,12 +384,9 @@ async function attachSingleImage(slide: Slide, index: number): Promise<Slide> {
       slide.imageQuery + ", professional photography, high quality"
     )}?width=1200&height=675&nologo=true`;
 
-    const filename = `img_${Date.now()}_${index}.jpg`;
-    const cachedUrl = await uploadExternalImageToStorage(pollinationsUrl, filename);
-
     return {
       ...slide,
-      image: cachedUrl,
+      image: pollinationsUrl,
       imageCredit: "Pollinations.ai",
       imageCreditUrl: "https://pollinations.ai",
     };
