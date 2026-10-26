@@ -177,7 +177,7 @@ export default function CreatePage() {
       setIsGenerating(false);
       clearInterval(interval);
     }
-  }, [outline, themeId, audience, tone, savePresentation, setPresentation, setIsGenerating]);
+  }, [outline, themeId, audience, tone, turnstileToken, savePresentation, setPresentation, setIsGenerating]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
