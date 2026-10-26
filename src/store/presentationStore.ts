@@ -17,15 +17,22 @@ interface PresentationStore {
   setTheme: (themeId: ThemeId) => void;
   setTitle: (title: string) => void;
 
-  // Local persistence helpers
+  // Local persistence helpers (pure in-browser localStorage)
   saved: Record<string, Presentation>;
   savePresentation: (p: Presentation) => void;
+  getPresentation: (id: string) => Presentation | null;
   deletePresentation: (id: string) => void;
   listPresentations: () => Presentation[];
 
   // Editor UI state
   activeSlideIndex: number;
   setActiveSlideIndex: (i: number) => void;
+
+  // Loading & Generation states
+  isGenerating: boolean;
+  setIsGenerating: (b: boolean) => void;
+  isSkeletonVisible: boolean;
+  setIsSkeletonVisible: (b: boolean) => void;
 }
 
 export const usePresentationStore = create<PresentationStore>()(
@@ -34,6 +41,11 @@ export const usePresentationStore = create<PresentationStore>()(
       presentation: null,
       saved: {},
       activeSlideIndex: 0,
+      isGenerating: false,
+      isSkeletonVisible: false,
+
+      setIsGenerating: (b) => set({ isGenerating: b }),
+      setIsSkeletonVisible: (b) => set({ isSkeletonVisible: b }),
 
       setPresentation: (p) => {
         set((state) => ({
@@ -130,6 +142,8 @@ export const usePresentationStore = create<PresentationStore>()(
         set((state) => ({
           saved: { ...state.saved, [p.id]: p },
         })),
+
+      getPresentation: (id) => get().saved[id] || null,
 
       deletePresentation: (id) =>
         set((state) => {

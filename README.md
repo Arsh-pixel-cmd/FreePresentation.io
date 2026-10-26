@@ -20,8 +20,8 @@ Build beautiful, export-ready presentations from a topic, a PDF upload, or paste
 | **Images** | Unsplash API + Pollinations.ai fallback (no key required) |
 | **Editor** | Click to edit · drag to reorder · add / delete slides · annotation canvas |
 | **Export** | .pptx (pptxgenjs) · .pdf (jsPDF) — no watermarks |
-| **Auth** | Supabase authentication (email + social) |
-| **Queue** | Upstash Redis + QStash for rate limiting |
+| **Privacy & Auth** | 100% ephemeral — 0 sign-in required, 0 remote database storage |
+| **Security** | Cloudflare Turnstile bot protection + Upstash rate limiting |
 | **Monitoring** | Sentry (errors) + PostHog (analytics) |
 
 ---
@@ -123,8 +123,8 @@ All environment variables are documented in [`.env.example`](.env.example). Copy
 | `UPSTASH_REDIS_REST_URL` | [Upstash Console](https://console.upstash.com) → Create Redis DB | Rate limiting is skipped |
 | `UPSTASH_REDIS_REST_TOKEN` | Same as above | Rate limiting is skipped |
 | `QSTASH_TOKEN` | [Upstash Console](https://console.upstash.com) → QStash tab | Background job queue disabled |
-| `NEXT_PUBLIC_SUPABASE_URL` | [Supabase Dashboard](https://supabase.com/dashboard) → New Project | Auth and DB persistence disabled |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Same as above → Settings → API | Auth and DB persistence disabled |
+| `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY` | [Cloudflare Dashboard](https://dash.cloudflare.com) → Turnstile | Invisible bot challenge disabled |
+| `CLOUDFLARE_TURNSTILE_SECRET_KEY` | Same as above → Secret Key | Token check bypassed in local dev |
 | `NEXT_PUBLIC_SENTRY_DSN` | [Sentry](https://sentry.io) → Create Project | Error tracking disabled |
 | `NEXT_PUBLIC_POSTHOG_KEY` | [PostHog](https://posthog.com) → Project Settings | Analytics disabled |
 
@@ -139,40 +139,38 @@ FreePresentation.io/
 │   │   ├── page.tsx                    → Landing page (/)
 │   │   ├── layout.tsx                  → Root layout + providers
 │   │   ├── globals.css                 → Global styles + Tailwind
-│   │   ├── actions.ts                  → Server actions
-│   │   ├── create/                     → /create route
+│   │   ├── actions.ts                  → Stateless server actions
+│   │   ├── proxy.ts                    → Edge security headers proxy
+│   │   ├── create/                     → /create route (generator + Turnstile)
 │   │   ├── editor/                     → /editor/:id route
-│   │   ├── login/                      → /login route (Supabase auth)
 │   │   └── api/
 │   │       ├── generate/route.ts       → POST: AI slide generation (NVIDIA)
 │   │       ├── generate/outline/       → POST: Outline-based generation
 │   │       ├── generate/worker/        → Background generation worker
 │   │       ├── images/route.ts         → GET/POST: Unsplash image fetching
 │   │       ├── parse/route.ts          → POST: PDF text extraction
-│   │       ├── export/                 → PPTX + PDF export endpoints
-│   │       └── auth/                   → Supabase auth callbacks
+│   │       └── export/                 → PPTX + PDF export endpoints
 │   ├── components/
 │   │   ├── CustomCursor.tsx            → Custom cursor effect
 │   │   ├── SelectionLoader.tsx         → Selection loading animation
 │   │   ├── SkeletonLoader.tsx          → Skeleton placeholder
 │   │   ├── SlideAnnotationCanvas.tsx   → Drawing/annotation on slides
-│   │   └── ui/                         → Reusable UI components (shadcn)
+│   │   ├── TurnstileWidget.tsx         → Cloudflare Turnstile bot verification
+│   │   └── ui/                         → Reusable UI components
 │   ├── lib/
 │   │   ├── themes/themes.ts            → 6 theme configurations
 │   │   ├── queue/upstash.ts            → Rate limiting + job queue
-│   │   ├── supabase/                   → Supabase client + storage helpers
+│   │   ├── security/turnstile.ts       → Server-side Turnstile verification
 │   │   ├── hooks/                      → Custom React hooks
 │   │   └── utils.ts                    → Utility functions
 │   ├── store/
-│   │   └── presentationStore.ts        → Zustand state management
+│   │   └── presentationStore.ts        → Local-first Zustand store (localStorage)
 │   ├── providers/                      → React context providers
 │   ├── monitoring/
 │   │   ├── sentry.ts                   → Sentry error tracking
 │   │   └── posthog.ts                  → PostHog analytics
 │   └── types/
 │       └── presentation.ts             → TypeScript type definitions
-├── supabase/
-│   └── migrations/                     → Database migration files
 ├── storage/                            → Local file storage
 ├── .env.example                        → Environment variable template
 ├── next.config.mjs                     → Next.js configuration
@@ -227,7 +225,7 @@ Redirect to /editor/:id
 | `jspdf` | 4.2 | PDF export |
 | `pdfjs-dist` | 4.4 | PDF text extraction |
 | `tesseract.js` | 5.1 | OCR for scanned PDFs |
-| `@supabase/supabase-js` | 2.x | Auth + database |
+| `tailwindcss-animate` | 1.0 | Component transitions & animations |
 | `@upstash/redis` | 1.x | Rate limiting |
 | `@upstash/qstash` | 2.x | Background job queue |
 | `@dnd-kit/*` | latest | Drag-to-reorder slides |
