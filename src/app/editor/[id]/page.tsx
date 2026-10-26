@@ -725,24 +725,25 @@ function SlideCanvasRenderer({
           ))}
         </div>
         <div style={{ flex: "0 0 48%", overflow: "hidden", position: "relative" }}>
-          {slide.image
-            ? /* eslint-disable-next-line @next/next/no-img-element */
-              <>
-                <img src={slide.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                {slide.imageCredit && (
-                  <div style={{ position: "absolute", bottom: 8, right: 8, fontSize: "clamp(6px, 0.8vw, 10px)", fontFamily: "monospace", background: "rgba(0,0,0,0.5)", color: "rgba(255,255,255,0.8)", padding: "2px 6px", borderRadius: 2, zIndex: 10 }}>
-                    {slide.imageCreditUrl ? (
-                      <a href={slide.imageCreditUrl} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{slide.imageCredit}</a>
-                    ) : (
-                      slide.imageCredit
-                    )}
-                  </div>
-                )}
-              </>
-            : <div style={{ width: "100%", height: "100%", background: theme.surface, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ color: theme.border, fontFamily: "monospace", fontSize: 11 }}>No image</span>
-              </div>
-          }
+          {slide.image ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={slide.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {slide.imageCredit && (
+                <div style={{ position: "absolute", bottom: 8, right: 8, fontSize: "clamp(6px, 0.8vw, 10px)", fontFamily: "monospace", background: "rgba(0,0,0,0.5)", color: "rgba(255,255,255,0.8)", padding: "2px 6px", borderRadius: 2, zIndex: 10 }}>
+                  {slide.imageCreditUrl ? (
+                    <a href={slide.imageCreditUrl} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{slide.imageCredit}</a>
+                  ) : (
+                    slide.imageCredit
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ width: "100%", height: "100%", background: theme.surface, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ color: theme.border, fontFamily: "monospace", fontSize: 11 }}>No image</span>
+            </div>
+          )}
         </div>
       </div>
     );
