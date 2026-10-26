@@ -259,8 +259,13 @@ export async function POST(req: NextRequest) {
       promptContent = `Create a presentation about:\n${userContent}`;
     }
 
-    const rawKeyPrimary = process.env["NVIDIA_nemotron-3-ultra-550b-a55b_API_KEY"];
-    const rawKeyBackup = process.env["NVIDIA_diffusiongemma-26b-a4b-it_API_KEY"];
+    const rawKeyPrimary =
+      process.env.NVIDIA_NEMOTRON_API_KEY ||
+      process.env.NVIDIA_API_KEY ||
+      process.env["NVIDIA_nemotron-3-ultra-550b-a55b_API_KEY"];
+    const rawKeyBackup =
+      process.env.NVIDIA_GEMMA_API_KEY ||
+      process.env["NVIDIA_diffusiongemma-26b-a4b-it_API_KEY"];
 
     if (!rawKeyPrimary && !rawKeyBackup) {
       return NextResponse.json({ error: "NVIDIA API Key not configured" }, { status: 500 });

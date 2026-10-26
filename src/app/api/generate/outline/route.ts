@@ -177,7 +177,10 @@ export async function POST(req: NextRequest) {
     const cleanedText = text.trim().substring(0, 5000);
     const systemPrompt = getOutlineSystemPrompt(audience, tone, slideCount);
 
-    const rawKey = process.env["NVIDIA_diffusiongemma-26b-a4b-it_API_KEY"];
+    const rawKey =
+      process.env.NVIDIA_GEMMA_API_KEY ||
+      process.env.NVIDIA_API_KEY ||
+      process.env["NVIDIA_diffusiongemma-26b-a4b-it_API_KEY"];
     if (!rawKey) {
       return NextResponse.json({ error: "NVIDIA API Key not configured" }, { status: 500 });
     }

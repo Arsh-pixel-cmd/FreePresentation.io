@@ -67,8 +67,8 @@ Open `.env` in your editor and fill in your API keys. See the **[Environment Var
 
 ```env
 # At least ONE of these NVIDIA keys (get free keys at https://build.nvidia.com)
-NVIDIA_nemotron-3-ultra-550b-a55b_API_KEY=nvapi-xxxxxxxxxxxxx
-NVIDIA_diffusiongemma-26b-a4b-it_API_KEY=nvapi-xxxxxxxxxxxxx
+NVIDIA_NEMOTRON_API_KEY=nvapi-xxxxxxxxxxxxx
+NVIDIA_GEMMA_API_KEY=nvapi-xxxxxxxxxxxxx
 
 # App URL (keep as-is for local dev)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -108,8 +108,8 @@ All environment variables are documented in [`.env.example`](.env.example). Copy
 
 | Variable | Where to Get It | Purpose |
 |----------|----------------|---------|
-| `NVIDIA_nemotron-3-ultra-550b-a55b_API_KEY` | [NVIDIA Build](https://build.nvidia.com) → Search "Nemotron" → Get API Key | Primary AI model for slide generation |
-| `NVIDIA_diffusiongemma-26b-a4b-it_API_KEY` | [NVIDIA Build](https://build.nvidia.com) → Search "Gemma" → Get API Key | Backup AI model (used if primary times out) |
+| `NVIDIA_NEMOTRON_API_KEY` | [NVIDIA Build](https://build.nvidia.com) → Search "Nemotron" → Get API Key | Primary AI model for slide generation |
+| `NVIDIA_GEMMA_API_KEY` | [NVIDIA Build](https://build.nvidia.com) → Search "Gemma" → Get API Key | Backup AI model (used if primary times out) |
 
 > **Note:** You need **at least one** NVIDIA key. Both are free. Having both gives you automatic failover.
 
