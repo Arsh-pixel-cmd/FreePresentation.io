@@ -95,20 +95,20 @@ export default function CustomCursor() {
       {/* Cursor Dot */}
       <div
         ref={cursorDotRef}
-        className={`fixed top-0 left-0 w-2.5 h-2.5 bg-indigo rounded-full pointer-events-none z-[9999] mix-blend-difference will-change-transform transition-[opacity,scale] duration-300 ${
-          isHidden ? "opacity-0 scale-0" : "opacity-100 scale-100"
-        } ${isGenerating ? "scale-[0.3] opacity-30" : ""}`}
+        className={`fixed top-0 left-0 w-2.5 h-2.5 bg-indigo rounded-full pointer-events-none z-[9999] mix-blend-difference will-change-transform transition-[opacity,scale] duration-200 ${
+          isHidden ? "opacity-0 scale-0" : isGenerating ? "opacity-40 scale-75" : "opacity-100 scale-100"
+        }`}
         style={{ transform: "translate3d(-100px, -100px, 0)" }}
       />
 
-      {/* Cursor Ring / Loader */}
+      {/* Cursor Ring — calm follower, never a rogue spinning loader */}
       <div
         ref={cursorRingRef}
-        className={`fixed top-0 left-0 w-9 h-9 border rounded-full pointer-events-none z-[9998] will-change-transform transition-[opacity,scale,border-color,background-color] duration-300 ${
-          isHovered && !isGenerating ? "scale-[1.6] border-indigo bg-indigo/5" : "border-indigo-muted"
-        } ${isHidden ? "opacity-0 scale-0" : "opacity-100"} ${
-          isGenerating ? "border-[2.5px] border-t-indigo border-r-indigo border-b-zinc-800 border-l-zinc-800 animate-spin scale-110" : ""
-        }`}
+        className={`fixed top-0 left-0 w-9 h-9 border rounded-full pointer-events-none z-[9998] will-change-transform transition-[opacity,scale,border-color,background-color] duration-200 ${
+          isHovered && !isGenerating
+            ? "scale-[1.5] border-indigo bg-indigo/5"
+            : "border-indigo-muted"
+        } ${isHidden ? "opacity-0 scale-0" : isGenerating ? "opacity-30 scale-90" : "opacity-100"}`}
         style={{ transform: "translate3d(-100px, -100px, 0)" }}
       />
     </>

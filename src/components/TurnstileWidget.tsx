@@ -32,8 +32,14 @@ export function TurnstileWidget({ onVerify, onExpire, className }: TurnstileWidg
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const siteKey = process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY;
+  const isDev = process.env.NODE_ENV === "development";
 
   useEffect(() => {
+    // In local development, proactively supply dev bypass token so flow works immediately
+    if (isDev) {
+      onVerify("dev-bypass-token");
+    }
+
     if (!siteKey || siteKey === "your_turnstile_site_key_here") {
       return;
     }
@@ -47,12 +53,27 @@ export function TurnstileWidget({ onVerify, onExpire, className }: TurnstileWidg
           widgetIdRef.current = window.turnstile.render(containerRef.current, {
             sitekey: siteKey,
             callback: (token: string) => onVerify(token),
-            "expired-callback": () => onExpire?.(),
+            "expired-callback": () => {
+              if (isDev) {
+                onVerify("dev-bypass-token");
+              } else {
+                onExpire?.();
+              }
+            },
+            "error-callback": (error: any) => {
+              console.warn("[Turnstile] Widget error or blocked domain:", error);
+              if (isDev) {
+                onVerify("dev-bypass-token");
+              }
+            },
             theme: "dark",
-            size: "flexible" as any,
+            size: "normal",
           });
         } catch (err) {
           console.warn("[Turnstile] Render error:", err);
+          if (isDev) {
+            onVerify("dev-bypass-token");
+          }
         }
       }
     };
@@ -79,7 +100,7 @@ export function TurnstileWidget({ onVerify, onExpire, className }: TurnstileWidg
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, onVerify, onExpire]);
+  }, [siteKey, isDev, onVerify, onExpire]);
 
   if (!siteKey || siteKey === "your_turnstile_site_key_here") {
     return null;

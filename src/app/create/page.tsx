@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ThemeId } from "@/types/presentation";
 import { THEME_LIST } from "@/lib/themes/themes";
 import { usePresentationStore } from "@/store/presentationStore";
-import SkeletonLoader from "@/components/SkeletonLoader";
+import SkeletonLoader, { SlideSkeletonLoader } from "@/components/SkeletonLoader";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 type Tab = "prompt" | "upload" | "paste" | "url";
@@ -104,6 +104,9 @@ export default function CreatePage() {
         rawText = parseData.text;
       }
 
+      const effectiveTurnstileToken =
+        turnstileToken || (process.env.NODE_ENV === "development" ? "dev-bypass-token" : "");
+
       const res = await fetch("/api/generate/outline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -112,7 +115,7 @@ export default function CreatePage() {
           audience,
           tone,
           slideCount,
-          turnstileToken,
+          turnstileToken: effectiveTurnstileToken,
         }),
       });
 
@@ -147,14 +150,17 @@ export default function CreatePage() {
     }, 2000);
 
     try {
+      const effectiveTurnstileToken =
+        turnstileToken || (process.env.NODE_ENV === "development" ? "dev-bypass-token" : "");
+
       const formData = new FormData();
       formData.append("mode", "outline");
       formData.append("outline", JSON.stringify(outline));
       formData.append("themeId", themeId);
       formData.append("audience", audience);
       formData.append("tone", tone);
-      if (turnstileToken) {
-        formData.append("turnstileToken", turnstileToken);
+      if (effectiveTurnstileToken) {
+        formData.append("turnstileToken", effectiveTurnstileToken);
       }
 
       const res = await fetch("/api/generate", { method: "POST", body: formData });
@@ -191,44 +197,67 @@ export default function CreatePage() {
 
   if (loading) {
     const activeSteps = loadingType === "outline" ? OUTLINE_LOAD_STEPS : FULL_GEN_LOAD_STEPS;
+    const currentTheme = THEME_LIST.find((t) => t.id === themeId);
+
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="min-h-screen bg-surface flex flex-col items-center justify-center px-6"
+        className="min-h-screen bg-surface flex flex-col items-center justify-center px-6 py-12"
       >
-        {/* Skeleton placeholder cards */}
-        <div className="w-full max-w-[600px] mb-10">
-          <SkeletonLoader type="rect" count={1} className="skeleton-loader--hero" />
-          <SkeletonLoader type="line" count={4} className="mt-4" />
+        {/* 16:9 Presentation Slide Canvas with Centered Engine Loader */}
+        <div className="w-full max-w-[620px] mb-8">
+          <SlideSkeletonLoader
+            themeAccent={currentTheme?.accent || "#6366f1"}
+            themeName={currentTheme?.name || "Standard"}
+            activeStepText={activeSteps[loadStep] || "Processing…"}
+          />
         </div>
 
-        {/* Step label */}
-        <div className="text-center">
-          <div className="min-h-[40px] mb-5 overflow-hidden">
+        {/* Dynamic narrative generation step */}
+        <div className="text-center max-w-[520px]">
+          <div className="min-h-[38px] mb-4 overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div
                 key={loadStep}
-                initial={{ opacity: 0, y: 15 }}
+                initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
+                exit={{ opacity: 0, y: -14 }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="font-serif text-xl text-cream tracking-tight"
+                className="font-serif text-xl sm:text-2xl text-cream tracking-tight"
               >
                 {activeSteps[loadStep] || "Processing…"}
               </motion.div>
             </AnimatePresence>
           </div>
-          <div className="flex gap-2 justify-center mb-6">
+
+          {/* Stepper bar pills */}
+          <div className="flex gap-2 justify-center mb-5">
             {activeSteps.map((_, i) => (
-              <div key={i} className={`w-2 h-2 rounded-full transition-colors duration-400 ${i <= loadStep ? "bg-indigo" : "bg-slate-700"}`} />
+              <div
+                key={i}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i === loadStep
+                    ? "w-8"
+                    : i < loadStep
+                    ? "w-4 opacity-75"
+                    : "w-2 opacity-30"
+                }`}
+                style={{
+                  backgroundColor: i <= loadStep ? (currentTheme?.accent || "#6366f1") : "#475569",
+                }}
+              />
             ))}
           </div>
+
           <div className="font-mono text-xs tracking-widest uppercase text-slate-400">
-            Using theme:{" "}
-            <span style={{ color: THEME_LIST.find((t) => t.id === themeId)?.accent }} className="font-semibold">
-              {THEME_LIST.find((t) => t.id === themeId)?.name}
+            Applying theme:{" "}
+            <span
+              style={{ color: currentTheme?.accent || "#6366f1" }}
+              className="font-semibold"
+            >
+              {currentTheme?.name}
             </span>
           </div>
         </div>

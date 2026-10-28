@@ -50,8 +50,17 @@ export async function checkRateLimit(ip: string): Promise<{
       remaining: Math.max(0, RATE_LIMIT_MAX - current),
       resetIn: ttl,
     };
-  } catch (err) {
-    console.warn("Rate limiting check failed, bypassing:", err);
+  } catch (err: any) {
+    const isDnsError =
+      err?.code === "ENOTFOUND" ||
+      err?.cause?.code === "ENOTFOUND" ||
+      err?.message?.includes("ENOTFOUND");
+
+    if (isDnsError) {
+      console.warn("[RateLimit] Upstash Redis host unreachable (ENOTFOUND), bypassing rate limit check.");
+    } else {
+      console.warn("[RateLimit] Rate limiting check failed, bypassing:", err?.message || err);
+    }
     return { allowed: true, remaining: RATE_LIMIT_MAX, resetIn: RATE_LIMIT_WINDOW };
   }
 }
