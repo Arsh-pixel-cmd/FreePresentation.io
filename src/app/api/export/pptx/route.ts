@@ -6,12 +6,16 @@ import { THEMES } from "@/lib/themes/themes";
 export async function POST(req: NextRequest) {
   try {
     const presentation: Presentation = await req.json();
-    const theme = THEMES[presentation.themeId];
+    if (!presentation || !Array.isArray(presentation.slides)) {
+      return NextResponse.json({ error: "Invalid presentation data" }, { status: 400 });
+    }
+
+    const theme = THEMES[presentation.themeId] || THEMES.obsidian;
 
     const pres = new PptxGenJS();
     pres.layout = "LAYOUT_16x9";
     pres.author = "FreePresentation";
-    pres.title = presentation.title;
+    pres.title = presentation.title || "Presentation";
 
     pres.defineSlideMaster({
       title: "MAIN",
@@ -28,9 +32,10 @@ export async function POST(req: NextRequest) {
 
     for (const slide of presentation.slides) {
       const s = pres.addSlide({ masterName: "MAIN" });
+      const body = Array.isArray(slide.body) ? slide.body : [];
 
       if (slide.layout === "title") {
-        s.addText(presentation.title, {
+        s.addText(slide.title || presentation.title || "Untitled", {
           x: 0.8, y: 1.8, w: 8.4, h: 1.2,
           fontSize: 36, bold: true,
           color: theme.text.replace("#", ""),
@@ -38,8 +43,8 @@ export async function POST(req: NextRequest) {
           align: "center",
           charSpacing: -1,
         });
-        if (slide.body[0]) {
-          s.addText(slide.body[0], {
+        if (body[0]) {
+          s.addText(body[0], {
             x: 1.5, y: 3.2, w: 7, h: 0.6,
             fontSize: 14, color: theme.muted.replace("#", ""),
             align: "center", fontFace: "Helvetica Neue",
@@ -55,7 +60,7 @@ export async function POST(req: NextRequest) {
           fontSize: 72, color: theme.accent.replace("#", ""),
           fontFace: "Georgia",
         });
-        s.addText(slide.quote || slide.body[0] || "", {
+        s.addText(slide.quote || body[0] || slide.title || "", {
           x: 0.8, y: 1.6, w: 8.4, h: 2.5,
           fontSize: 18, italic: true,
           color: theme.text.replace("#", ""),
@@ -76,7 +81,7 @@ export async function POST(req: NextRequest) {
           line: { color: theme.accent.replace("#", ""), width: 0 },
         });
 
-        s.addText(slide.title, {
+        s.addText(slide.title || "Untitled Slide", {
           x: 0.6, y: 0.65, w: slide.image ? 4.5 : 8.8, h: 1.1,
           fontSize: 24, bold: false,
           color: theme.text.replace("#", ""),
@@ -84,7 +89,7 @@ export async function POST(req: NextRequest) {
           charSpacing: -0.5,
         });
 
-        const bullets = slide.body.slice(0, 5);
+        const bullets = body.slice(0, 5);
         if (bullets.length > 0) {
           s.addText(
             bullets.map((b) => ({ text: b, options: { bullet: { type: "bullet", indent: 15 }, paraSpaceAfter: 6 } })),
@@ -120,19 +125,31 @@ export async function POST(req: NextRequest) {
 
         if (slide.image) {
           try {
-            const imgRes = await fetch(slide.image);
-            if (imgRes.ok) {
-              const imgBuffer = await imgRes.arrayBuffer();
-              const base64 = Buffer.from(imgBuffer).toString("base64");
-              const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+            if (slide.image.startsWith("data:")) {
               s.addImage({
-                data: `data:${contentType};base64,${base64}`,
+                data: slide.image,
                 x: 5.5, y: 1.2, w: 3.8, h: 3.0,
                 rounding: true,
               });
+            } else if (slide.image.startsWith("http://") || slide.image.startsWith("https://")) {
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 5000);
+              const imgRes = await fetch(slide.image, { signal: controller.signal });
+              clearTimeout(timeout);
+              if (imgRes.ok) {
+                const imgBuffer = await imgRes.arrayBuffer();
+                const base64 = Buffer.from(imgBuffer).toString("base64");
+                const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+                s.addImage({
+                  data: `data:${contentType};base64,${base64}`,
+                  x: 5.5, y: 1.2, w: 3.8, h: 3.0,
+                  rounding: true,
+                });
+              }
             }
-          } catch {
-            // Fall back gracefully if asset fetch fails
+          } catch (imgErr) {
+            console.warn(`Could not embed image on slide "${slide.title}":`, imgErr);
+            // Fall back gracefully without image
           }
         }
       }
@@ -146,15 +163,16 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = await pres.write({ outputType: "nodebuffer" });
+    const safeTitle = (presentation.title || "presentation").replace(/[^a-zA-Z0-9_\s-]/g, "_").trim() || "presentation";
 
     return new NextResponse(buffer as any, {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        "Content-Disposition": `attachment; filename="${presentation.title.replace(/[^a-zA-Z0-9]/g, "_")}.pptx"`,
+        "Content-Disposition": `attachment; filename="${safeTitle}.pptx"`,
       },
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("PPTX export error:", err);
-    return NextResponse.json({ error: "Export failed" }, { status: 500 });
+    return NextResponse.json({ error: err?.message || "Export failed" }, { status: 500 });
   }
 }

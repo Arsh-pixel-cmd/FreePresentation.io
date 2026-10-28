@@ -5,7 +5,11 @@ import { THEMES } from "@/lib/themes/themes";
 export async function POST(req: NextRequest) {
   try {
     const presentation: Presentation = await req.json();
-    const theme = THEMES[presentation.themeId];
+    if (!presentation || !Array.isArray(presentation.slides)) {
+      return NextResponse.json({ error: "Invalid presentation data" }, { status: 400 });
+    }
+
+    const theme = THEMES[presentation.themeId] || THEMES.obsidian;
 
     const { jsPDF } = await import("jspdf");
 
@@ -19,7 +23,8 @@ export async function POST(req: NextRequest) {
     const H = 167;
 
     const hexToRgb = (hex: string) => {
-      const n = parseInt(hex.replace("#", ""), 16);
+      const cleanHex = (hex || "#000000").replace("#", "");
+      const n = parseInt(cleanHex, 16);
       return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
     };
 
@@ -38,6 +43,8 @@ export async function POST(req: NextRequest) {
 
     for (let idx = 0; idx < presentation.slides.length; idx++) {
       const slide = presentation.slides[idx];
+      const body = Array.isArray(slide.body) ? slide.body : [];
+
       if (idx > 0) doc.addPage([W, H], "landscape");
 
       setFill(theme.bg);
@@ -50,18 +57,38 @@ export async function POST(req: NextRequest) {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(28);
         setTextColor(theme.text);
-        doc.text(slide.title, W / 2, H / 2 - 10, { align: "center" });
+        const titleText = slide.title || presentation.title || "Untitled";
+        doc.text(titleText, W / 2, H / 2 - 10, { align: "center" });
 
-        if (slide.body[0]) {
+        if (body[0]) {
           doc.setFont("helvetica", "normal");
           doc.setFontSize(12);
           setTextColor(theme.muted);
-          doc.text(slide.body[0], W / 2, H / 2 + 6, { align: "center" });
+          doc.text(body[0], W / 2, H / 2 + 6, { align: "center" });
         }
 
         setDrawColor(theme.accent);
         doc.setLineWidth(0.3);
         doc.line(W / 2 - 30, H / 2 + 18, W / 2 + 30, H / 2 + 18);
+      } else if (slide.layout === "quote") {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(40);
+        setTextColor(theme.accent);
+        doc.text("\u201C", 20, 36);
+
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(15);
+        setTextColor(theme.text);
+        const quoteText = slide.quote || body[0] || slide.title || "";
+        const quoteLines = doc.splitTextToSize(quoteText, 250);
+        doc.text(quoteLines, 20, 50);
+
+        if (slide.quoteAuthor) {
+          doc.setFont("courier", "normal");
+          doc.setFontSize(9);
+          setTextColor(theme.muted);
+          doc.text(`— ${slide.quoteAuthor}`, 20, 50 + quoteLines.length * 7 + 6);
+        }
       } else {
         setFill(theme.accent);
         doc.rect(20, 18, 18, 0.5, "F");
@@ -69,14 +96,14 @@ export async function POST(req: NextRequest) {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(18);
         setTextColor(theme.text);
-        const titleLines = doc.splitTextToSize(slide.title, 160);
+        const titleLines = doc.splitTextToSize(slide.title || "Untitled Slide", 160);
         doc.text(titleLines, 20, 30);
 
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         setTextColor(theme.muted);
         let y = 46;
-        slide.body.slice(0, 5).forEach((bullet) => {
+        body.slice(0, 5).forEach((bullet) => {
           const lines = doc.splitTextToSize(`— ${bullet}`, 150);
           doc.text(lines, 20, y);
           y += lines.length * 6 + 3;
@@ -114,15 +141,16 @@ export async function POST(req: NextRequest) {
     }
 
     const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
+    const safeTitle = (presentation.title || "presentation").replace(/[^a-zA-Z0-9_\s-]/g, "_").trim() || "presentation";
 
     return new NextResponse(pdfBuffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${presentation.title.replace(/[^a-zA-Z0-9]/g, "_")}.pdf"`,
+        "Content-Disposition": `attachment; filename="${safeTitle}.pdf"`,
       },
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("PDF export error:", err);
-    return NextResponse.json({ error: "PDF export failed" }, { status: 500 });
+    return NextResponse.json({ error: err?.message || "PDF export failed" }, { status: 500 });
   }
 }

@@ -104,17 +104,23 @@ export default function EditorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(presentation),
       });
-      if (!res.ok) throw new Error("Export failed");
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "");
+        throw new Error(`Export failed (${res.status}): ${errorText || "Unknown server error"}`);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${presentation.title.replace(/[^a-zA-Z0-9\s]/g, "")}.${format}`;
+      a.download = `${presentation.title.replace(/[^a-zA-Z0-9\s_-]/g, "") || "presentation"}.${format}`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
       showToast(`Exported as .${format} ✓`);
-    } catch {
-      showToast("Export failed. Try again.");
+    } catch (err: any) {
+      console.error(`Export ${format} error:`, err);
+      showToast(err?.message || "Export failed. Try again.");
     } finally {
       setExporting(null);
     }
@@ -365,7 +371,7 @@ export default function EditorPage() {
               {exporting ? `Exporting ${exporting}…` : "Export ↓"}
             </button>
             {exportOpen && (
-              <div className="absolute top-[calc(100%+6px)] right-0 bg-surface-overlay border border-surface-border rounded-xl overflow-hidden min-w-[250px] shadow-2xl z-[200] animate-slide-up">
+              <div className="ep-export-dropdown absolute top-[calc(100%+6px)] right-0 bg-surface-overlay border border-surface-border rounded-xl overflow-hidden min-w-[250px] shadow-2xl z-[200] animate-slide-up">
                 <button className="flex items-center gap-3.5 w-full px-5 py-4 bg-transparent border-none text-cream cursor-pointer text-left hover:bg-surface-subtle transition-colors duration-150 border-b border-surface-border last:border-b-0" onClick={() => handleExport("pptx")}>
                   <span className="bg-surface-subtle border border-surface-border-light text-indigo-400 px-2.5 py-1 rounded-md font-mono text-xs tracking-wide shrink-0 font-bold">PPT</span>
                   <div>
