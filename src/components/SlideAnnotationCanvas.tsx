@@ -141,12 +141,12 @@ export default function SlideAnnotationCanvas({
 
       {isDrawingMode && (
         <div
-          className="absolute bottom-4 left-4 bg-black/90 border border-zinc-800 p-2 rounded-[4px] flex items-center gap-3 shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
+          className="absolute bottom-4 left-4 bg-surface-overlay/95 backdrop-blur-md border border-surface-border p-2.5 rounded-lg flex items-center gap-3 shadow-2xl"
           style={{ pointerEvents: "auto" }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Colors */}
-          <div className="flex gap-1.5 border-r border-zinc-800 pr-3">
+          <div className="flex gap-2 border-r border-surface-border pr-3">
             {["#f43f5e", "#eab308", "#10b981", "#ffffff", themeAccent].map((c) => (
               <button
                 key={c}
@@ -154,30 +154,30 @@ export default function SlideAnnotationCanvas({
                 className="w-4 h-4 rounded-full border border-black/40 cursor-pointer transition-transform duration-100 hover:scale-110"
                 style={{
                   backgroundColor: c,
-                  outline: currentColor === c ? "1.5px solid white" : "none",
-                  outlineOffset: 1,
+                  outline: currentColor === c ? "2px solid #6366f1" : "none",
+                  outlineOffset: 1.5,
                 }}
               />
             ))}
           </div>
 
           {/* Width */}
-          <div className="flex items-center gap-2 border-r border-zinc-800 pr-3">
-            <span className="font-mono text-[9px] text-zinc-500 uppercase tracking-wide">Brush</span>
+          <div className="flex items-center gap-2 border-r border-surface-border pr-3">
+            <span className="font-mono text-[10px] text-slate-300 font-semibold uppercase tracking-wide">Brush</span>
             <input
               type="range"
               min="1"
               max="10"
               value={currentWidth}
               onChange={(e) => setCurrentWidth(parseInt(e.target.value))}
-              className="w-16 accent-indigo cursor-pointer h-1 rounded-lg bg-zinc-800"
+              className="w-16 accent-indigo cursor-pointer h-1.5 rounded-lg bg-surface-subtle"
             />
           </div>
 
           {/* Clear */}
           <button
             onClick={handleClear}
-            className="bg-transparent border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-cream px-2 py-1 rounded-[2px] font-mono text-[9px] tracking-wide uppercase cursor-pointer transition-colors duration-150"
+            className="bg-surface-subtle border border-surface-border hover:border-slate-500 text-slate-300 hover:text-white px-2.5 py-1 rounded-md font-mono text-[10px] tracking-wide uppercase cursor-pointer transition-colors duration-150 font-medium"
           >
             Clear
           </button>

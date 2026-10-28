@@ -188,10 +188,10 @@ export default function EditorPage() {
     return (
       <div style={centeredStyle}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "var(--font-dm-serif), serif", fontSize: 48, color: "#e8e4dc", marginBottom: 16 }}>
+          <div style={{ fontFamily: "var(--font-dm-serif), serif", fontSize: 48, color: "#f8fafc", marginBottom: 16 }}>
             Not found
           </div>
-          <p style={{ color: "#52525b", marginBottom: 32, fontFamily: "monospace", fontSize: 12 }}>
+          <p style={{ color: "#94a3b8", marginBottom: 32, fontFamily: "monospace", fontSize: 13 }}>
             This presentation doesn&apos;t exist or was cleared.
           </p>
           <button
@@ -210,7 +210,7 @@ export default function EditorPage() {
       <div className="min-h-screen bg-surface flex flex-col">
         {/* Header Skeleton */}
         <header className="h-[54px] flex items-center justify-between px-5 bg-surface border-b border-surface-border">
-          <div className="font-serif text-base text-cream opacity-50">
+          <div className="font-serif text-base text-cream opacity-70">
             Free<span className="text-indigo">Presentation</span>
           </div>
           <div className="flex items-center gap-3">
@@ -220,10 +220,10 @@ export default function EditorPage() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-[192px_1fr] flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-[210px_1fr] flex-1">
           {/* Sidebar Skeleton */}
-          <aside className="bg-[#060606] border-r border-surface-border p-2.5 max-md:hidden space-y-3">
-            <div className="font-mono text-[9px] tracking-widest uppercase text-zinc-800 mb-3 px-1">Slides</div>
+          <aside className="bg-surface-raised border-r border-surface-border p-3 max-md:hidden space-y-3">
+            <div className="font-mono text-xs tracking-widest uppercase text-slate-300 font-semibold mb-3 px-1">Slides</div>
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="p-2 border border-transparent space-y-2">
                 <div className="w-12 h-3 skeleton-item" />
@@ -242,10 +242,10 @@ export default function EditorPage() {
             </div>
 
             {/* Slide Canvas Placeholder */}
-            <div className="w-full max-w-[960px] aspect-video skeleton-item rounded-[4px]" />
+            <div className="w-full max-w-[960px] aspect-video skeleton-item rounded-lg" />
 
             {/* Notes Placeholder */}
-            <div className="w-full max-w-[960px] p-5 bg-[#0a0a0a] border border-surface-border rounded-[3px] space-y-2">
+            <div className="w-full max-w-[960px] p-5 bg-surface-raised border border-surface-border rounded-lg space-y-2">
               <div className="w-24 h-3 skeleton-item" />
               <div className="w-full h-4 skeleton-item" />
               <div className="w-3/4 h-4 skeleton-item" />
@@ -262,14 +262,14 @@ export default function EditorPage() {
   return (
     <>
       {toast && (
-        <div className="fixed bottom-7 right-7 z-[9999] bg-[#111] border border-zinc-800 text-cream px-5 py-3 rounded-[3px] font-mono text-[11px] tracking-wide animate-toast-in shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+        <div className="fixed bottom-7 right-7 z-[9999] bg-surface-overlay border border-surface-border-light text-cream px-5 py-3 rounded-lg font-mono text-xs tracking-wide animate-toast-in shadow-2xl">
           {toast}
         </div>
       )}
 
-      <header className="fixed top-0 left-0 right-0 z-[100] h-[54px] flex items-center justify-between px-5 bg-surface border-b border-surface-border">
-        <a href="/create" className="font-serif text-base text-cream no-underline whitespace-nowrap shrink-0">
-          Free<span className="text-indigo">Presentation</span>
+      <header className="fixed top-0 left-0 right-0 z-[100] h-[54px] flex items-center justify-between px-5 bg-surface/90 backdrop-blur-md border-b border-surface-border">
+        <a href="/create" className="font-serif text-base text-cream no-underline whitespace-nowrap shrink-0 flex items-center gap-1.5">
+          <span>Free<span className="text-indigo font-bold">Presentation</span></span>
         </a>
 
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 max-md:hidden">
@@ -280,19 +280,19 @@ export default function EditorPage() {
               onChange={(e) => setTitleDraft(e.target.value)}
               onBlur={handleTitleSave}
               onKeyDown={(e) => e.key === "Enter" && handleTitleSave()}
-              className="bg-[#141414] border border-indigo text-cream text-[13px] px-2.5 py-1 rounded-[2px] outline-none font-sans"
+              className="bg-surface-subtle border border-indigo text-cream text-[13px] px-3 py-1 rounded-md outline-none font-sans"
             />
           ) : (
             <button
-              className="bg-transparent border-none text-cream text-[13px] font-medium cursor-pointer flex items-center gap-1.5 px-2 py-1 rounded-[2px] hover:bg-[#141414] transition-colors duration-200"
+              className="bg-transparent border-none text-cream text-[14px] font-medium cursor-pointer flex items-center gap-1.5 px-2.5 py-1 rounded-md hover:bg-surface-subtle transition-colors duration-200"
               onClick={() => { setTitleDraft(presentation.title); setEditingTitle(true); }}
               title="Click to rename"
             >
               {presentation.title}
-              <span className="text-zinc-700 text-[11px]">✎</span>
+              <span className="text-slate-400 text-xs">✎</span>
             </button>
           )}
-          <span className="font-mono text-[10px] tracking-wide text-zinc-700 bg-surface-subtle border border-surface-border-light px-2 py-0.5 rounded-[2px]">
+          <span className="font-mono text-xs tracking-wide text-slate-300 bg-surface-subtle border border-surface-border px-2.5 py-0.5 rounded-md font-semibold">
             {presentation.slides.length} slides
           </span>
         </div>
@@ -300,7 +300,7 @@ export default function EditorPage() {
         <div className="flex gap-2 items-center shrink-0">
           <div className="relative">
             <button
-              className="bg-transparent border border-surface-border-light text-zinc-400 hover:border-zinc-600 hover:text-cream px-3 py-[5px] rounded-[2px] font-mono text-[10px] tracking-wide uppercase cursor-pointer transition-all duration-200 whitespace-nowrap flex items-center gap-1.5"
+              className="bg-surface-raised/80 border border-surface-border text-slate-200 hover:border-slate-500 hover:text-white px-3 py-1.5 rounded-md font-mono text-xs tracking-wide uppercase cursor-pointer transition-all duration-200 whitespace-nowrap flex items-center gap-1.5"
               onClick={() => setThemeMenuOpen(!themeMenuOpen)}
               data-theme-btn="true"
             >
@@ -314,12 +314,12 @@ export default function EditorPage() {
               {theme.name}
             </button>
             {themeMenuOpen && (
-              <div className="ep-theme-dropdown absolute top-[calc(100%+6px)] right-0 bg-[#0c0c0c] border border-surface-border-light rounded-[3px] overflow-hidden min-w-[160px] shadow-[0_12px_40px_rgba(0,0,0,0.6)] z-[200] animate-slide-up">
+              <div className="ep-theme-dropdown absolute top-[calc(100%+6px)] right-0 bg-surface-overlay border border-surface-border rounded-xl overflow-hidden min-w-[170px] shadow-2xl z-[200] animate-slide-up">
                 {THEME_LIST.map((t) => (
                   <button
                     key={t.id}
-                    className={`flex items-center gap-2.5 w-full px-4 py-2.5 bg-transparent border-none cursor-pointer font-mono text-[11px] tracking-wide uppercase transition-all duration-150 border-b border-surface-border last:border-b-0 hover:bg-[#111] hover:text-cream ${
-                      presentation.themeId === t.id ? "text-cream" : "text-zinc-500"
+                    className={`flex items-center gap-2.5 w-full px-4 py-2.5 bg-transparent border-none cursor-pointer font-mono text-xs tracking-wide uppercase transition-all duration-150 border-b border-surface-border last:border-b-0 hover:bg-surface-subtle hover:text-white ${
+                      presentation.themeId === t.id ? "text-cream font-bold" : "text-slate-300"
                     }`}
                     onClick={() => {
                       setTheme(t.id as ThemeId);
@@ -329,7 +329,7 @@ export default function EditorPage() {
                   >
                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.accent, display: "inline-block", flexShrink: 0 }} />
                     {t.name}
-                    {presentation.themeId === t.id && <span className="ml-auto" style={{ color: t.accent }}>✓</span>}
+                    {presentation.themeId === t.id && <span className="ml-auto font-bold" style={{ color: t.accent }}>✓</span>}
                   </button>
                 ))}
               </div>
@@ -337,27 +337,27 @@ export default function EditorPage() {
           </div>
 
           <button
-            className={`px-3 py-[5px] rounded-[2px] font-mono text-[10px] tracking-wide uppercase cursor-pointer transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md font-mono text-xs tracking-wide uppercase cursor-pointer transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 font-medium ${
               isDrawingMode
-                ? "bg-rose-500 border border-rose-500 text-white hover:bg-rose-600"
-                : "bg-transparent border border-surface-border-light text-zinc-400 hover:border-zinc-600 hover:text-cream"
+                ? "bg-rose-500 border border-rose-500 text-white hover:bg-rose-600 shadow-md"
+                : "bg-surface-raised/80 border border-surface-border text-slate-200 hover:border-slate-500 hover:text-white"
             }`}
             onClick={() => setIsDrawingMode(!isDrawingMode)}
           >
             {isDrawingMode ? "✎ Draw: ON" : "✎ Annotate"}
           </button>
 
-          <button className="bg-transparent border border-surface-border-light text-zinc-400 hover:border-zinc-600 hover:text-cream px-3 py-[5px] rounded-[2px] font-mono text-[10px] tracking-wide uppercase cursor-pointer transition-all duration-200 whitespace-nowrap flex items-center gap-1.5" onClick={handleAddSlide}>
+          <button className="bg-surface-raised/80 border border-surface-border text-slate-200 hover:border-slate-500 hover:text-white px-3 py-1.5 rounded-md font-mono text-xs tracking-wide uppercase cursor-pointer transition-all duration-200 whitespace-nowrap flex items-center gap-1.5" onClick={handleAddSlide}>
             + Add slide
           </button>
 
-          <button className="bg-transparent border border-surface-border-light text-zinc-400 hover:border-zinc-600 hover:text-cream px-3 py-[5px] rounded-[2px] font-mono text-[10px] tracking-wide uppercase cursor-pointer transition-all duration-200 whitespace-nowrap flex items-center gap-1.5" onClick={handleDuplicate}>
+          <button className="bg-surface-raised/80 border border-surface-border text-slate-200 hover:border-slate-500 hover:text-white px-3 py-1.5 rounded-md font-mono text-xs tracking-wide uppercase cursor-pointer transition-all duration-200 whitespace-nowrap flex items-center gap-1.5" onClick={handleDuplicate}>
             Duplicate
           </button>
 
           <div className="relative">
             <button
-              className="bg-indigo hover:bg-indigo-hover text-white px-4 py-[6px] rounded-[2px] font-mono text-[11px] tracking-wide uppercase cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 whitespace-nowrap"
+              className="bg-indigo hover:bg-indigo-hover text-white px-4 py-1.5 rounded-md font-mono text-xs tracking-wide uppercase cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 whitespace-nowrap font-semibold shadow-md shadow-indigo/20"
               onClick={() => setExportOpen(!exportOpen)}
               disabled={!!exporting}
               data-export-btn="true"
@@ -365,19 +365,19 @@ export default function EditorPage() {
               {exporting ? `Exporting ${exporting}…` : "Export ↓"}
             </button>
             {exportOpen && (
-              <div className="absolute top-[calc(100%+6px)] right-0 bg-[#0c0c0c] border border-surface-border-light rounded-[3px] overflow-hidden min-w-[240px] shadow-[0_12px_40px_rgba(0,0,0,0.6)] z-[200] animate-slide-up">
-                <button className="flex items-center gap-3.5 w-full px-[18px] py-4 bg-transparent border-none text-cream cursor-pointer text-left hover:bg-[#111] transition-colors duration-150 border-b border-surface-border last:border-b-0" onClick={() => handleExport("pptx")}>
-                  <span className="bg-[#1a1a1a] border border-zinc-800 text-indigo px-2 py-[3px] rounded-[2px] font-mono text-[10px] tracking-wide shrink-0">PPT</span>
+              <div className="absolute top-[calc(100%+6px)] right-0 bg-surface-overlay border border-surface-border rounded-xl overflow-hidden min-w-[250px] shadow-2xl z-[200] animate-slide-up">
+                <button className="flex items-center gap-3.5 w-full px-5 py-4 bg-transparent border-none text-cream cursor-pointer text-left hover:bg-surface-subtle transition-colors duration-150 border-b border-surface-border last:border-b-0" onClick={() => handleExport("pptx")}>
+                  <span className="bg-surface-subtle border border-surface-border-light text-indigo-400 px-2.5 py-1 rounded-md font-mono text-xs tracking-wide shrink-0 font-bold">PPT</span>
                   <div>
-                    <div className="text-xs mb-0.5">PowerPoint (.pptx)</div>
-                    <div className="font-mono text-[10px] text-zinc-700 tracking-wide">No watermark · Full quality</div>
+                    <div className="text-xs font-semibold mb-0.5">PowerPoint (.pptx)</div>
+                    <div className="font-mono text-[10px] text-slate-400 tracking-wide font-medium">No watermark · Full quality</div>
                   </div>
                 </button>
-                <button className="flex items-center gap-3.5 w-full px-[18px] py-4 bg-transparent border-none text-cream cursor-pointer text-left hover:bg-[#111] transition-colors duration-150 border-b border-surface-border last:border-b-0" onClick={() => handleExport("pdf")}>
-                  <span className="bg-[#1a1a1a] border border-zinc-800 text-indigo px-2 py-[3px] rounded-[2px] font-mono text-[10px] tracking-wide shrink-0">PDF</span>
+                <button className="flex items-center gap-3.5 w-full px-5 py-4 bg-transparent border-none text-cream cursor-pointer text-left hover:bg-surface-subtle transition-colors duration-150 border-b border-surface-border last:border-b-0" onClick={() => handleExport("pdf")}>
+                  <span className="bg-surface-subtle border border-surface-border-light text-indigo-400 px-2.5 py-1 rounded-md font-mono text-xs tracking-wide shrink-0 font-bold">PDF</span>
                   <div>
-                    <div className="text-xs mb-0.5">PDF Document (.pdf)</div>
-                    <div className="font-mono text-[10px] text-zinc-700 tracking-wide">Print-ready · Shareable</div>
+                    <div className="text-xs font-semibold mb-0.5">PDF Document (.pdf)</div>
+                    <div className="font-mono text-[10px] text-slate-400 tracking-wide font-medium">Print-ready · Shareable</div>
                   </div>
                 </button>
               </div>
@@ -386,9 +386,9 @@ export default function EditorPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-[192px_1fr] min-h-screen pt-[54px]">
-        <aside className="bg-[#060606] border-r border-surface-border p-2.5 overflow-y-auto h-[calc(100vh-54px)] sticky top-[54px] max-md:hidden [&::-webkit-scrollbar]:w-0">
-          <div className="font-mono text-[9px] tracking-widest uppercase text-zinc-800 mb-3 px-1">Slides</div>
+      <div className="grid grid-cols-1 md:grid-cols-[210px_1fr] min-h-screen pt-[54px]">
+        <aside className="bg-surface-raised/80 border-r border-surface-border p-3 overflow-y-auto h-[calc(100vh-54px)] sticky top-[54px] max-md:hidden [&::-webkit-scrollbar]:w-0">
+          <div className="font-mono text-xs tracking-widest uppercase text-slate-300 font-bold mb-3 px-1">Slides</div>
           {presentation.slides.map((slide, i) => (
             <div
               key={slide.id}
@@ -397,45 +397,45 @@ export default function EditorPage() {
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => handleDrop(i)}
               onClick={() => setActiveSlideIndex(i)}
-              className={`p-2 rounded-[3px] border cursor-pointer transition-all duration-200 mb-1.5 select-none hover:border-zinc-800 hover:bg-[#0a0a0a] ${
-                i === activeSlideIndex ? "border-indigo bg-surface-subtle" : "border-transparent"
+              className={`p-2 rounded-lg border cursor-pointer transition-all duration-200 mb-2 select-none hover:border-slate-500 hover:bg-surface-subtle/50 ${
+                i === activeSlideIndex ? "border-indigo bg-surface-subtle shadow-md shadow-indigo/10" : "border-surface-border/40"
               }`}
             >
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="font-mono text-[9px] text-zinc-700 tracking-wide">{String(i + 1).padStart(2, "0")}</span>
-                <span className="font-mono text-[9px] text-zinc-800 tracking-wide uppercase overflow-hidden whitespace-nowrap text-ellipsis">{slide.layout}</span>
+              <div className="flex items-center justify-between mb-1.5 px-0.5">
+                <span className="font-mono text-[10px] text-slate-300 font-bold tracking-wide">{String(i + 1).padStart(2, "0")}</span>
+                <span className="font-mono text-[10px] text-slate-400 font-medium tracking-wide uppercase overflow-hidden whitespace-nowrap text-ellipsis max-w-[110px]">{slide.layout}</span>
               </div>
-              <div className="rounded-[2px] p-2 aspect-video" style={{ background: theme.bg, border: `1px solid ${theme.border}` }}>
-                <div style={{ background: theme.accent, height: 2, width: "35%", borderRadius: 1, marginBottom: 6 }} />
-                <div style={{ background: theme.text, height: 5, width: "85%", opacity: 0.85, borderRadius: 1, marginBottom: 3 }} />
-                <div style={{ background: theme.text, height: 3, width: "100%", opacity: 0.25, borderRadius: 1, marginBottom: 2 }} />
-                <div style={{ background: theme.text, height: 3, width: "70%", opacity: 0.25, borderRadius: 1, marginBottom: 6 }} />
+              <div className="rounded-md p-2 aspect-video shadow-sm" style={{ background: theme.bg, border: `1px solid ${theme.border}` }}>
+                <div style={{ background: theme.accent, height: 2, width: "35%", borderRadius: 1, marginBottom: 5 }} />
+                <div style={{ background: theme.text, height: 5, width: "85%", opacity: 0.9, borderRadius: 1, marginBottom: 3 }} />
+                <div style={{ background: theme.text, height: 3, width: "100%", opacity: 0.35, borderRadius: 1, marginBottom: 2 }} />
+                <div style={{ background: theme.text, height: 3, width: "70%", opacity: 0.35, borderRadius: 1, marginBottom: 5 }} />
                 {slide.image && (
-                  <div style={{ background: theme.border, height: 28, borderRadius: 2, opacity: 0.5 }} />
+                  <div style={{ background: theme.border, height: 26, borderRadius: 2, opacity: 0.6 }} />
                 )}
               </div>
             </div>
           ))}
 
-          <button className="w-full mt-2.5 bg-transparent border border-dashed border-surface-border-light text-zinc-700 p-2.5 rounded-[2px] font-mono text-[10px] tracking-wide uppercase cursor-pointer hover:border-indigo hover:text-indigo transition-all duration-200" onClick={handleAddSlide}>
+          <button className="w-full mt-3 bg-surface-subtle/60 border border-dashed border-surface-border text-slate-300 p-2.5 rounded-lg font-mono text-xs tracking-wide uppercase cursor-pointer hover:border-indigo hover:text-indigo-400 transition-all duration-200 font-semibold" onClick={handleAddSlide}>
             + Add slide
           </button>
         </aside>
 
         <main className="px-6 md:px-12 py-8 bg-surface">
-          <div className="flex items-center gap-3 mb-5">
+          <div className="flex items-center gap-3 mb-5 max-w-[960px]">
             <button
-              className="bg-transparent border border-surface-border-light text-zinc-500 hover:border-zinc-600 hover:text-cream px-3.5 py-1.5 rounded-[2px] font-mono text-[10px] tracking-wide uppercase cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+              className="bg-surface-raised/70 border border-surface-border text-slate-300 hover:border-slate-500 hover:text-white px-3.5 py-1.5 rounded-md font-mono text-xs tracking-wide uppercase cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 font-medium"
               disabled={activeSlideIndex === 0}
               onClick={() => setActiveSlideIndex(activeSlideIndex - 1)}
             >
               ← Prev
             </button>
-            <span className="font-mono text-[11px] text-zinc-700 tracking-wide">
+            <span className="font-mono text-xs text-slate-300 font-semibold tracking-wide">
               {String(activeSlideIndex + 1).padStart(2, "0")} / {String(presentation.slides.length).padStart(2, "0")}
             </span>
             <button
-              className="bg-transparent border border-surface-border-light text-zinc-500 hover:border-zinc-600 hover:text-cream px-3.5 py-1.5 rounded-[2px] font-mono text-[10px] tracking-wide uppercase cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+              className="bg-surface-raised/70 border border-surface-border text-slate-300 hover:border-slate-500 hover:text-white px-3.5 py-1.5 rounded-md font-mono text-xs tracking-wide uppercase cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 font-medium"
               disabled={activeSlideIndex === presentation.slides.length - 1}
               onClick={() => setActiveSlideIndex(activeSlideIndex + 1)}
             >
@@ -444,13 +444,13 @@ export default function EditorPage() {
 
             <div className="ml-auto flex gap-2">
               <button
-                className="bg-transparent border border-surface-border-light text-zinc-500 hover:border-zinc-600 hover:text-cream px-3.5 py-1.5 rounded-[2px] font-mono text-[10px] tracking-wide uppercase cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-all duration-200"
+                className="bg-surface-raised/70 border border-surface-border text-slate-300 hover:border-slate-500 hover:text-white px-3.5 py-1.5 rounded-md font-mono text-xs tracking-wide uppercase cursor-pointer transition-all duration-200 font-medium"
                 onClick={() => setEditingSlide({ ...activeSlide })}
               >
                 ✎ Edit slide
               </button>
               <button
-                className="bg-transparent border border-surface-border-light text-zinc-500 hover:border-red-500 hover:text-red-500 px-3.5 py-1.5 rounded-[2px] font-mono text-[10px] tracking-wide uppercase cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-all duration-200"
+                className="bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:border-rose-500/40 hover:text-rose-300 px-3.5 py-1.5 rounded-md font-mono text-xs tracking-wide uppercase cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-all duration-200 font-medium"
                 onClick={() => handleDeleteSlide(activeSlideIndex)}
                 disabled={presentation.slides.length <= 1}
               >
@@ -460,7 +460,7 @@ export default function EditorPage() {
           </div>
 
           <div
-            className="relative border border-surface-border-light rounded-[4px] overflow-hidden cursor-pointer max-w-[960px] shadow-[0_20px_60px_rgba(0,0,0,0.6)] hover:border-zinc-800 transition-colors duration-200"
+            className="relative border border-surface-border rounded-xl overflow-hidden cursor-pointer max-w-[960px] shadow-2xl hover:border-slate-500 transition-colors duration-200"
             onDoubleClick={() => !isDrawingMode && setEditingSlide({ ...activeSlide })}
           >
             <SlideCanvasRenderer slide={activeSlide} theme={theme} />
@@ -473,14 +473,14 @@ export default function EditorPage() {
               themeAccent={theme.accent}
             />
             {!isDrawingMode && (
-              <div className="absolute bottom-2.5 right-3.5 font-mono text-[9px] tracking-wide uppercase text-white/5 pointer-events-none">Double-click to edit</div>
+              <div className="absolute bottom-3 right-4 font-mono text-[10px] tracking-wide uppercase text-white/30 pointer-events-none font-medium">Double-click to edit</div>
             )}
           </div>
 
           {activeSlide?.speakerNotes && (
-            <div className="mt-6 max-w-[960px] p-5 bg-[#0a0a0a] border border-surface-border rounded-[3px]">
-              <div className="font-mono text-[9px] tracking-widest uppercase text-zinc-700 mb-1.5">Speaker Notes</div>
-              <div className="text-xs md:text-sm text-zinc-500 leading-relaxed font-light">{activeSlide.speakerNotes}</div>
+            <div className="mt-6 max-w-[960px] p-5 bg-surface-raised border border-surface-border rounded-xl shadow-md">
+              <div className="font-mono text-xs tracking-widest uppercase text-slate-300 font-bold mb-2">Speaker Notes</div>
+              <div className="text-sm text-slate-200 leading-relaxed font-normal">{activeSlide.speakerNotes}</div>
             </div>
           )}
         </main>
@@ -693,23 +693,25 @@ function EditSlideModal({
 
   return (
     <div
-      className="fixed inset-0 z-[500] bg-black/88 backdrop-blur-md flex items-center justify-center p-6"
+      className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-md flex items-center justify-center p-6"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-[#0c0c0c] border border-surface-border-light rounded-[4px] p-9 w-full max-w-[540px] max-h-[90vh] overflow-y-auto animate-slide-up [&::-webkit-scrollbar]:w-0">
-        <div className="flex items-center justify-between mb-7">
-          <div className="font-serif text-xl text-cream tracking-tight">Edit Slide</div>
-          <button className="bg-transparent border-none text-zinc-500 hover:text-cream text-2xl cursor-pointer p-0 transition-colors duration-200" onClick={onClose}>×</button>
+      <div className="bg-surface-overlay border border-surface-border rounded-xl p-8 w-full max-w-[560px] max-h-[90vh] overflow-y-auto animate-slide-up shadow-2xl [&::-webkit-scrollbar]:w-0">
+        <div className="flex items-center justify-between mb-7 border-b border-surface-border pb-4">
+          <div className="font-serif text-2xl text-cream tracking-tight font-medium">Edit Slide</div>
+          <button className="bg-transparent border-none text-slate-400 hover:text-white text-2xl cursor-pointer p-0 transition-colors duration-200" onClick={onClose}>×</button>
         </div>
 
         <div className="mb-5">
-          <label className="block font-mono text-[9px] tracking-widest uppercase text-zinc-700 mb-2">Layout</label>
-          <div className="flex flex-wrap gap-1.5">
+          <label className="block font-mono text-xs tracking-widest uppercase text-slate-300 font-semibold mb-2">Layout</label>
+          <div className="flex flex-wrap gap-2">
             {layouts.map((l) => (
               <button
                 key={l}
-                className={`bg-transparent border border-surface-border-light text-zinc-500 hover:border-zinc-600 hover:text-cream px-[11px] py-[5px] rounded-[2px] font-mono text-[9px] tracking-wide uppercase cursor-pointer transition-all duration-150 ${
-                  draft.layout === l ? "bg-indigo border-indigo text-white" : ""
+                className={`border px-3 py-1.5 rounded-md font-mono text-xs tracking-wide uppercase cursor-pointer transition-all duration-150 ${
+                  draft.layout === l
+                    ? "bg-indigo border-indigo text-white font-bold shadow-sm"
+                    : "bg-surface-subtle border-surface-border text-slate-300 hover:border-slate-500 hover:text-white"
                 }`}
                 onClick={() => setDraft({ ...draft, layout: l })}
               >
@@ -720,9 +722,9 @@ function EditSlideModal({
         </div>
 
         <div className="mb-5">
-          <label className="block font-mono text-[9px] tracking-widest uppercase text-zinc-700 mb-2">Title</label>
+          <label className="block font-mono text-xs tracking-widest uppercase text-slate-300 font-semibold mb-2">Title</label>
           <input
-            className="w-full bg-[#0a0a0a] border border-surface-border-light focus:border-indigo text-cream rounded-[2px] px-3.5 py-2.5 font-sans text-xs md:text-sm outline-none transition-colors duration-200"
+            className="w-full bg-surface-subtle border border-surface-border focus:border-indigo text-cream rounded-md px-4 py-2.5 font-sans text-sm outline-none transition-colors duration-200 placeholder:text-slate-500"
             value={draft.title}
             onChange={(e) => setDraft({ ...draft, title: e.target.value })}
             placeholder="Slide title"
@@ -730,9 +732,9 @@ function EditSlideModal({
         </div>
 
         <div className="mb-5">
-          <label className="block font-mono text-[9px] tracking-widest uppercase text-zinc-700 mb-2">Content — one bullet per line</label>
+          <label className="block font-mono text-xs tracking-widest uppercase text-slate-300 font-semibold mb-2">Content — one bullet per line</label>
           <textarea
-            className="w-full bg-[#0a0a0a] border border-surface-border-light focus:border-indigo text-cream rounded-[2px] px-3.5 py-2.5 font-sans text-xs md:text-sm outline-none resize-y transition-colors duration-200 leading-relaxed"
+            className="w-full bg-surface-subtle border border-surface-border focus:border-indigo text-cream rounded-md px-4 py-3 font-sans text-sm outline-none resize-y transition-colors duration-200 leading-relaxed placeholder:text-slate-500"
             value={draft.body.join("\n")}
             onChange={(e) => setDraft({ ...draft, body: e.target.value.split("\n") })}
             rows={5}
@@ -743,18 +745,18 @@ function EditSlideModal({
         {draft.layout === "quote" && (
           <>
             <div className="mb-5">
-              <label className="block font-mono text-[9px] tracking-widest uppercase text-zinc-700 mb-2">Quote text</label>
+              <label className="block font-mono text-xs tracking-widest uppercase text-slate-300 font-semibold mb-2">Quote text</label>
               <textarea
-                className="w-full bg-[#0a0a0a] border border-surface-border-light focus:border-indigo text-cream rounded-[2px] px-3.5 py-2.5 font-sans text-xs md:text-sm outline-none resize-y transition-colors duration-200 leading-relaxed"
+                className="w-full bg-surface-subtle border border-surface-border focus:border-indigo text-cream rounded-md px-4 py-2.5 font-sans text-sm outline-none resize-y transition-colors duration-200 leading-relaxed placeholder:text-slate-500"
                 value={draft.quote || ""}
                 onChange={(e) => setDraft({ ...draft, quote: e.target.value })}
                 rows={3}
               />
             </div>
             <div className="mb-5">
-              <label className="block font-mono text-[9px] tracking-widest uppercase text-zinc-700 mb-2">Quote author</label>
+              <label className="block font-mono text-xs tracking-widest uppercase text-slate-300 font-semibold mb-2">Quote author</label>
               <input
-                className="w-full bg-[#0a0a0a] border border-surface-border-light focus:border-indigo text-cream rounded-[2px] px-3.5 py-2.5 font-sans text-xs md:text-sm outline-none transition-colors duration-200"
+                className="w-full bg-surface-subtle border border-surface-border focus:border-indigo text-cream rounded-md px-4 py-2.5 font-sans text-sm outline-none transition-colors duration-200 placeholder:text-slate-500"
                 value={draft.quoteAuthor || ""}
                 onChange={(e) => setDraft({ ...draft, quoteAuthor: e.target.value })}
                 placeholder="Author name"
@@ -764,23 +766,23 @@ function EditSlideModal({
         )}
 
         <div className="mb-5">
-          <label className="block font-mono text-[9px] tracking-widest uppercase text-zinc-700 mb-2">Image URL (optional)</label>
+          <label className="block font-mono text-xs tracking-widest uppercase text-slate-300 font-semibold mb-2">Image URL (optional)</label>
           <input
-            className="w-full bg-[#0a0a0a] border border-surface-border-light focus:border-indigo text-cream rounded-[2px] px-3.5 py-2.5 font-sans text-xs md:text-sm outline-none transition-colors duration-200"
+            className="w-full bg-surface-subtle border border-surface-border focus:border-indigo text-cream rounded-md px-4 py-2.5 font-sans text-sm outline-none transition-colors duration-200 placeholder:text-slate-500"
             value={draft.image || ""}
             onChange={(e) => setDraft({ ...draft, image: e.target.value, imageCredit: "", imageCreditUrl: "" })}
             placeholder="https://images.unsplash.com/…"
           />
           {draft.image && (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={draft.image} alt="" style={{ marginTop: 10, width: "100%", height: 120, objectFit: "cover", borderRadius: 3, border: "1px solid #1a1a1a" }} />
+            <img src={draft.image} alt="" style={{ marginTop: 10, width: "100%", height: 130, objectFit: "cover", borderRadius: 6, border: "1px solid #1e293b" }} />
           )}
         </div>
 
         <div className="mb-5">
-          <label className="block font-mono text-[9px] tracking-widest uppercase text-zinc-700 mb-2">Speaker notes</label>
+          <label className="block font-mono text-xs tracking-widest uppercase text-slate-300 font-semibold mb-2">Speaker notes</label>
           <textarea
-            className="w-full bg-[#0a0a0a] border border-surface-border-light focus:border-indigo text-cream rounded-[2px] px-3.5 py-2.5 font-sans text-xs md:text-sm outline-none resize-y transition-colors duration-200 leading-relaxed"
+            className="w-full bg-surface-subtle border border-surface-border focus:border-indigo text-cream rounded-md px-4 py-2.5 font-sans text-sm outline-none resize-y transition-colors duration-200 leading-relaxed placeholder:text-slate-500"
             value={draft.speakerNotes || ""}
             onChange={(e) => setDraft({ ...draft, speakerNotes: e.target.value })}
             rows={3}
@@ -788,11 +790,11 @@ function EditSlideModal({
           />
         </div>
 
-        <div className="flex gap-2.5 mt-7">
-          <button className="flex-1 bg-cream hover:bg-white text-[#080808] border-none py-3 rounded-[2px] font-mono text-[11px] tracking-wide uppercase cursor-pointer transition-colors duration-200" onClick={() => onSave(draft)}>
+        <div className="flex gap-3 mt-7 pt-4 border-t border-surface-border">
+          <button className="flex-1 bg-cream hover:bg-white text-surface border-none py-3.5 rounded-md font-mono text-xs tracking-wide uppercase cursor-pointer transition-colors duration-200 font-bold shadow-md" onClick={() => onSave(draft)}>
             Save changes
           </button>
-          <button className="bg-transparent border border-surface-border-light hover:border-zinc-600 hover:text-cream text-zinc-500 py-3 px-5 rounded-[2px] font-mono text-[11px] tracking-wide uppercase cursor-pointer transition-all duration-200" onClick={onClose}>
+          <button className="bg-transparent border border-surface-border hover:border-slate-500 hover:text-white text-slate-300 py-3.5 px-6 rounded-md font-mono text-xs tracking-wide uppercase cursor-pointer transition-all duration-200" onClick={onClose}>
             Cancel
           </button>
         </div>
@@ -802,12 +804,13 @@ function EditSlideModal({
 }
 
 const centeredStyle: React.CSSProperties = {
-  minHeight: "100vh", background: "#080808",
+  minHeight: "100vh", background: "#090d16",
   display: "flex", alignItems: "center", justifyContent: "center",
   fontFamily: "var(--font-dm-sans), sans-serif",
 };
 const primaryBtn: React.CSSProperties = {
-  background: "#e8e4dc", color: "#080808", border: "none",
-  padding: "12px 28px", borderRadius: 3, cursor: "pointer",
+  background: "#f8fafc", color: "#090d16", border: "none",
+  padding: "12px 28px", borderRadius: 6, cursor: "pointer",
   fontFamily: "monospace", fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase",
+  fontWeight: "bold",
 };

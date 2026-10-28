@@ -222,12 +222,12 @@ export default function CreatePage() {
           </div>
           <div className="flex gap-2 justify-center mb-6">
             {activeSteps.map((_, i) => (
-              <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors duration-400 ${i <= loadStep ? "bg-indigo" : "bg-zinc-800"}`} />
+              <div key={i} className={`w-2 h-2 rounded-full transition-colors duration-400 ${i <= loadStep ? "bg-indigo" : "bg-slate-700"}`} />
             ))}
           </div>
-          <div className="font-mono text-[11px] tracking-widest uppercase text-zinc-500">
+          <div className="font-mono text-xs tracking-widest uppercase text-slate-400">
             Using theme:{" "}
-            <span style={{ color: THEME_LIST.find((t) => t.id === themeId)?.accent }}>
+            <span style={{ color: THEME_LIST.find((t) => t.id === themeId)?.accent }} className="font-semibold">
               {THEME_LIST.find((t) => t.id === themeId)?.name}
             </span>
           </div>
@@ -239,36 +239,36 @@ export default function CreatePage() {
   if (outline) {
     return (
       <>
-        <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-6 md:px-12 py-5 border-b border-surface-border backdrop-blur-md bg-surface/80">
-          <Link href="/" className="font-serif text-[18px] text-cream no-underline">
-            Free<span className="text-indigo">Presentation</span>
+        <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-6 md:px-12 py-4 border-b border-surface-border backdrop-blur-md bg-surface/85">
+          <Link href="/" className="font-serif text-[20px] text-cream no-underline">
+            Free<span className="text-indigo font-bold">Presentation</span>
           </Link>
           <button
-            className="font-mono text-[10px] tracking-wider uppercase text-zinc-500 hover:text-cream bg-transparent border border-surface-border-light hover:border-zinc-700 px-4.5 py-2.5 rounded-[2px] cursor-pointer transition-colors duration-150"
+            className="font-mono text-xs tracking-wider uppercase text-slate-300 hover:text-white bg-surface-raised/70 border border-surface-border hover:border-slate-500 px-4 py-2 rounded-md cursor-pointer transition-colors duration-150"
             onClick={() => setOutline(null)}
           >
             ← Back to Prompt
           </button>
         </nav>
 
-        <main className="min-h-screen pt-[105px] pb-24 px-6 md:px-16 max-w-[800px] mx-auto bg-surface">
+        <main className="min-h-screen pt-[105px] pb-24 px-6 md:px-16 max-w-[850px] mx-auto bg-surface">
           <div className="mb-10 border-b border-surface-border pb-8">
-            <label className="block font-mono text-[10px] tracking-widest uppercase text-zinc-500 mb-2">Presentation Title</label>
+            <label className="block font-mono text-xs tracking-widest uppercase text-slate-300 font-semibold mb-2">Presentation Title</label>
             <input
               type="text"
-              className="w-full bg-transparent border-none focus:outline-none font-serif text-[28px] md:text-[40px] text-cream placeholder:text-zinc-800 leading-tight"
+              className="w-full bg-transparent border-none focus:outline-none font-serif text-[28px] md:text-[40px] text-cream placeholder:text-slate-600 leading-tight"
               value={outline.title}
               onChange={(e) => setOutline({ ...outline, title: e.target.value })}
               placeholder="Outline Title"
             />
           </div>
 
-          <div className="space-y-4 mb-10">
+          <div className="space-y-5 mb-10">
             {outline.slides.map((slide, idx) => (
-              <div key={slide.id} className="bg-[#080808] border border-surface-border-light rounded-[4px] p-5 md:p-7 hover:border-zinc-800 transition-colors duration-250">
+              <div key={slide.id} className="bg-surface-raised border border-surface-border rounded-xl p-6 md:p-7 hover:border-slate-600 transition-colors duration-250 shadow-md">
                 <div className="flex justify-between items-center mb-5 gap-4">
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs text-zinc-500 bg-zinc-800/10 px-2 py-0.5 rounded-[2px] border border-zinc-800/20">{idx + 1}</span>
+                    <span className="font-mono text-xs text-slate-200 bg-surface-subtle px-2.5 py-1 rounded border border-surface-border font-semibold">{idx + 1}</span>
                     <select
                       value={slide.layout}
                       onChange={(e) => {
@@ -276,7 +276,7 @@ export default function CreatePage() {
                         slides[idx] = { ...slides[idx], layout: e.target.value };
                         setOutline({ ...outline, slides });
                       }}
-                      className="bg-[#080808] border border-surface-border-light focus:border-indigo text-indigo font-mono text-[10px] tracking-wider uppercase px-2 py-1 rounded-[2px] outline-none cursor-pointer"
+                      className="bg-surface-subtle border border-surface-border focus:border-indigo text-indigo-400 font-mono text-xs tracking-wider uppercase px-3 py-1.5 rounded-md outline-none cursor-pointer"
                     >
                       <option value="title">title</option>
                       <option value="content">content</option>
@@ -289,9 +289,9 @@ export default function CreatePage() {
                     </select>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <button
-                      className="bg-transparent border border-surface-border-light text-zinc-500 hover:text-cream px-2 py-1 rounded-[2px] cursor-pointer disabled:opacity-20 transition-colors duration-150"
+                      className="bg-surface-subtle border border-surface-border text-slate-300 hover:text-white hover:border-slate-500 px-2.5 py-1 rounded-md cursor-pointer disabled:opacity-20 transition-colors duration-150 font-bold"
                       disabled={idx === 0}
                       onClick={() => {
                         const slides = [...outline.slides];
@@ -305,7 +305,7 @@ export default function CreatePage() {
                       ↑
                     </button>
                     <button
-                      className="bg-transparent border border-surface-border-light text-zinc-500 hover:text-cream px-2 py-1 rounded-[2px] cursor-pointer disabled:opacity-20 transition-colors duration-150"
+                      className="bg-surface-subtle border border-surface-border text-slate-300 hover:text-white hover:border-slate-500 px-2.5 py-1 rounded-md cursor-pointer disabled:opacity-20 transition-colors duration-150 font-bold"
                       disabled={idx === outline.slides.length - 1}
                       onClick={() => {
                         const slides = [...outline.slides];
@@ -319,7 +319,7 @@ export default function CreatePage() {
                       ↓
                     </button>
                     <button
-                      className="bg-transparent border border-red-500/10 hover:border-red-500/30 text-zinc-500 hover:text-red-400 px-3 py-1 rounded-[2px] cursor-pointer transition-colors duration-150 text-[11px] font-mono uppercase tracking-wide"
+                      className="bg-rose-500/10 border border-rose-500/20 hover:border-rose-500/50 text-rose-400 hover:text-rose-300 px-3 py-1 rounded-md cursor-pointer transition-colors duration-150 text-xs font-mono uppercase tracking-wide font-medium"
                       onClick={() => {
                         const slides = outline.slides.filter((_, i) => i !== idx);
                         setOutline({ ...outline, slides });
@@ -332,10 +332,10 @@ export default function CreatePage() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block font-mono text-[9px] tracking-widest uppercase text-zinc-700 mb-1.5">Slide Title</label>
+                    <label className="block font-mono text-xs tracking-widest uppercase text-slate-300 font-semibold mb-2">Slide Title</label>
                     <input
                       type="text"
-                      className="w-full bg-transparent border-b border-surface-border focus:border-indigo text-cream text-[16px] font-light py-1 focus:outline-none placeholder:text-zinc-800"
+                      className="w-full bg-transparent border-b border-surface-border focus:border-indigo text-cream text-[17px] font-normal py-1.5 focus:outline-none placeholder:text-slate-600"
                       value={slide.title}
                       onChange={(e) => {
                         const slides = [...outline.slides];
@@ -346,9 +346,9 @@ export default function CreatePage() {
                     />
                   </div>
                   <div>
-                    <label className="block font-mono text-[9px] tracking-widest uppercase text-zinc-700 mb-1.5">Bullet summary / descriptive cues</label>
+                    <label className="block font-mono text-xs tracking-widest uppercase text-slate-300 font-semibold mb-2">Bullet summary / descriptive cues</label>
                     <textarea
-                      className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-zinc-400 text-xs md:text-sm p-4 rounded-[3px] focus:outline-none resize-y leading-relaxed"
+                      className="w-full bg-surface-subtle border border-surface-border focus:border-indigo text-slate-200 text-sm p-4 rounded-lg focus:outline-none resize-y leading-relaxed placeholder:text-slate-500"
                       value={slide.summary}
                       onChange={(e) => {
                         const slides = [...outline.slides];
@@ -366,7 +366,7 @@ export default function CreatePage() {
 
           <div className="flex gap-4">
             <button
-              className="flex-1 bg-transparent border border-dashed border-surface-border-light hover:border-indigo hover:text-indigo text-zinc-500 py-4.5 rounded-[3px] font-mono text-[11px] tracking-wide uppercase cursor-pointer transition-all duration-200"
+              className="flex-1 bg-surface-raised/60 border border-dashed border-surface-border hover:border-indigo hover:text-indigo-400 text-slate-300 py-4.5 rounded-lg font-mono text-xs tracking-wide uppercase cursor-pointer transition-all duration-200 font-medium"
               onClick={() => {
                 const newSlide = {
                   id: `slide-new-${Date.now()}`,
@@ -380,7 +380,7 @@ export default function CreatePage() {
               + Add Slide to Outline
             </button>
             <button
-              className="flex-1 bg-cream hover:bg-white text-[#080808] border-none py-4.5 px-8 rounded-[3px] font-mono text-[12px] tracking-wider uppercase font-semibold cursor-pointer transition-colors duration-250 flex items-center justify-between"
+              className="flex-1 bg-cream hover:bg-white text-surface border-none py-4.5 px-8 rounded-lg font-mono text-xs tracking-wider uppercase font-bold cursor-pointer transition-colors duration-250 flex items-center justify-between shadow-lg"
               onClick={handleGeneratePresentation}
             >
               <span>Expand & Generate Slides</span>
@@ -394,34 +394,34 @@ export default function CreatePage() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-6 md:px-12 py-5 border-b border-surface-border backdrop-blur-md bg-surface/80">
-        <Link href="/" className="font-serif text-[18px] text-cream no-underline">
-          Free<span className="text-indigo">Presentation</span>
+      <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-6 md:px-12 py-4 border-b border-surface-border backdrop-blur-md bg-surface/85">
+        <Link href="/" className="font-serif text-[20px] text-cream no-underline">
+          Free<span className="text-indigo font-bold">Presentation</span>
         </Link>
         <div className="flex items-center">
-          <span className="font-mono text-[10px] tracking-wider uppercase text-green-600 bg-green-600/10 border border-green-600/20 px-3 py-1 rounded-[2px]">
+          <span className="font-mono text-xs tracking-wider uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-md font-semibold">
             Always Free
           </span>
         </div>
       </nav>
 
-      <main className="grid grid-cols-1 md:grid-cols-[1fr_380px] min-h-screen pt-[73px]">
+      <main className="grid grid-cols-1 md:grid-cols-[1fr_400px] min-h-screen pt-[73px]">
         <div className="px-6 md:px-14 py-10 md:py-16 border-r border-surface-border">
-          <div className="font-mono text-[10px] tracking-widest uppercase text-indigo mb-4 flex items-center gap-2 before:content-[''] before:block before:w-4 before:h-[1px] before:bg-indigo">
+          <div className="font-mono text-xs tracking-widest uppercase text-indigo-400 mb-4 flex items-center gap-2 before:content-[''] before:block before:w-4 before:h-[1px] before:bg-indigo">
             New Presentation
           </div>
-          <h1 className="font-serif text-[36px] md:text-[52px] leading-none tracking-tight text-cream mb-10">
+          <h1 className="font-serif text-[38px] md:text-[54px] leading-none tracking-tight text-cream mb-10">
             What&apos;s it about?
           </h1>
 
-          <div className="flex gap-0 border border-surface-border-light rounded-[3px] overflow-hidden mb-7 w-fit">
+          <div className="flex gap-0 border border-surface-border rounded-lg overflow-hidden mb-7 w-fit bg-surface-raised/60">
             {(["prompt", "upload", "paste", "url"] as Tab[]).map((t) => (
               <button
                 key={t}
-                className={`bg-transparent border-none px-5 py-2.5 font-mono text-[11px] tracking-wide uppercase cursor-pointer transition-all duration-200 border-r border-surface-border-light last:border-r-0 ${
+                className={`bg-transparent border-none px-5 py-2.5 font-mono text-xs tracking-wide uppercase cursor-pointer transition-all duration-200 border-r border-surface-border last:border-r-0 ${
                   tab === t
-                    ? "bg-indigo text-white"
-                    : "text-zinc-500 hover:text-cream hover:bg-surface-subtle"
+                    ? "bg-indigo text-white font-semibold"
+                    : "text-slate-300 hover:text-white hover:bg-surface-subtle"
                 }`}
                 onClick={() => setTab(t)}
               >
@@ -442,20 +442,20 @@ export default function CreatePage() {
                 {tab === "prompt" && (
                   <div>
                     <textarea
-                      className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] p-5 resize-y font-sans text-[15px] leading-relaxed font-light outline-none transition-colors duration-200 placeholder:text-zinc-700"
+                      className="w-full bg-surface-raised border border-surface-border focus:border-indigo text-cream rounded-lg p-5 resize-y font-sans text-[15px] leading-relaxed font-light outline-none transition-colors duration-200 placeholder:text-slate-500"
                       placeholder="e.g. The impact of remote collaboration on team productivity…"
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       rows={5}
                     />
-                    <div className="font-mono text-[10px] tracking-wider uppercase text-zinc-700 mt-5 mb-3">
+                    <div className="font-mono text-xs tracking-wider uppercase text-slate-300 font-semibold mt-5 mb-3">
                       Or try an example:
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {EXAMPLE_PROMPTS.map((ex) => (
                         <button
                           key={ex}
-                          className="bg-transparent border border-surface-border-light text-zinc-500 hover:border-indigo hover:text-indigo-300 hover:bg-indigo/4 px-3.5 py-1.5 rounded-[2px] text-xs cursor-pointer transition-all duration-200 text-left font-sans"
+                          className="bg-surface-raised/70 border border-surface-border text-slate-300 hover:border-indigo hover:text-white hover:bg-indigo/10 px-3.5 py-1.5 rounded-md text-xs cursor-pointer transition-all duration-200 text-left font-sans"
                           onClick={() => setPrompt(ex)}
                         >
                           {ex}
@@ -467,12 +467,12 @@ export default function CreatePage() {
 
                 {tab === "upload" && (
                   <div
-                    className={`border border-dashed rounded-[3px] px-8 py-12 text-center cursor-pointer transition-all duration-200 ${
+                    className={`border border-dashed rounded-xl px-8 py-12 text-center cursor-pointer transition-all duration-200 ${
                       dragOver
-                        ? "border-indigo bg-indigo/4"
+                        ? "border-indigo bg-indigo/10"
                         : file
-                        ? "border-solid border-indigo"
-                        : "border-zinc-800 hover:border-indigo hover:bg-indigo/4"
+                        ? "border-solid border-indigo bg-surface-raised"
+                        : "border-surface-border hover:border-indigo hover:bg-indigo/5 bg-surface-raised/40"
                     }`}
                     onDragOver={(e) => {
                       e.preventDefault();
@@ -493,17 +493,17 @@ export default function CreatePage() {
                     />
                     {file ? (
                       <div className="flex items-center gap-4 text-left justify-center">
-                        <div className="bg-indigo/10 border border-indigo/30 text-indigo px-3 py-2 rounded-[2px] font-mono text-[11px] tracking-wide">
+                        <div className="bg-indigo/20 border border-indigo/40 text-indigo-300 px-3 py-2 rounded-md font-mono text-xs tracking-wide font-bold">
                           PDF
                         </div>
                         <div>
-                          <div className="text-sm text-cream mb-0.5">{file.name}</div>
-                          <div className="font-mono text-[11px] text-zinc-500">
+                          <div className="text-sm text-cream font-medium mb-0.5">{file.name}</div>
+                          <div className="font-mono text-xs text-slate-400">
                             {(file.size / 1024).toFixed(1)} KB
                           </div>
                         </div>
                         <button
-                          className="bg-transparent border-none text-zinc-500 hover:text-cream text-xl cursor-pointer ml-auto transition-colors duration-200"
+                          className="bg-transparent border-none text-slate-400 hover:text-cream text-xl cursor-pointer ml-auto transition-colors duration-200"
                           onClick={(e) => {
                             e.stopPropagation();
                             setFile(null);
@@ -514,9 +514,9 @@ export default function CreatePage() {
                       </div>
                     ) : (
                       <div className="flex flex-col items-center">
-                        <div className="text-[28px] text-zinc-700 mb-3">↑</div>
-                        <div className="font-serif text-xl text-cream mb-1.5">Drop a PDF here</div>
-                        <div className="text-xs text-zinc-700 font-mono tracking-wide">
+                        <div className="text-[32px] text-indigo-400 mb-3">↑</div>
+                        <div className="font-serif text-xl text-cream mb-1.5 font-medium">Drop a PDF here</div>
+                        <div className="text-xs text-slate-400 font-mono tracking-wide">
                           or click to browse · PDF only
                         </div>
                       </div>
@@ -526,7 +526,7 @@ export default function CreatePage() {
 
                 {tab === "paste" && (
                   <textarea
-                    className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] p-5 resize-y font-sans text-[15px] leading-relaxed font-light outline-none transition-colors duration-200 placeholder:text-zinc-700"
+                    className="w-full bg-surface-raised border border-surface-border focus:border-indigo text-cream rounded-lg p-5 resize-y font-sans text-[15px] leading-relaxed font-light outline-none transition-colors duration-200 placeholder:text-slate-500"
                     placeholder="Paste your notes, outline, or any text here. We'll turn it into slides."
                     value={pasteText}
                     onChange={(e) => setPasteText(e.target.value)}
@@ -538,12 +538,12 @@ export default function CreatePage() {
                   <div>
                     <input
                       type="url"
-                      className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] p-5 font-sans text-[15px] outline-none transition-colors duration-200 placeholder:text-zinc-700"
+                      className="w-full bg-surface-raised border border-surface-border focus:border-indigo text-cream rounded-lg p-5 font-sans text-[15px] outline-none transition-colors duration-200 placeholder:text-slate-500"
                       placeholder="e.g. https://en.wikipedia.org/wiki/Artificial_intelligence"
                       value={urlInput}
                       onChange={(e) => setUrlInput(e.target.value)}
                     />
-                    <div className="font-mono text-[10px] tracking-wider uppercase text-zinc-700 mt-3">
+                    <div className="font-mono text-xs tracking-wider uppercase text-slate-400 mt-3 font-medium">
                       Enter any article, blog post, or webpage URL to scrape and convert to slides.
                     </div>
                   </div>
@@ -555,11 +555,11 @@ export default function CreatePage() {
           {/* Customizations: Audience, Tone, and Slide Count */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             <div>
-              <label className="block font-mono text-[10px] tracking-wider uppercase text-zinc-500 mb-2">Target Audience</label>
+              <label className="block font-mono text-xs tracking-wider uppercase text-slate-300 font-semibold mb-2">Target Audience</label>
               <select
                 value={audience}
                 onChange={(e) => setAudience(e.target.value)}
-                className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] px-3.5 py-3 font-sans text-xs md:text-sm outline-none transition-colors duration-200 cursor-pointer"
+                className="w-full bg-surface-raised border border-surface-border focus:border-indigo text-cream rounded-lg px-3.5 py-3 font-sans text-xs md:text-sm outline-none transition-colors duration-200 cursor-pointer"
               >
                 <option value="General Public">General Public</option>
                 <option value="Investors / Venture Capital">Investors / Venture Capital</option>
@@ -570,11 +570,11 @@ export default function CreatePage() {
               </select>
             </div>
             <div>
-              <label className="block font-mono text-[10px] tracking-wider uppercase text-zinc-500 mb-2">Tone of Voice</label>
+              <label className="block font-mono text-xs tracking-wider uppercase text-slate-300 font-semibold mb-2">Tone of Voice</label>
               <select
                 value={tone}
                 onChange={(e) => setTone(e.target.value)}
-                className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] px-3.5 py-3 font-sans text-xs md:text-sm outline-none transition-colors duration-200 cursor-pointer"
+                className="w-full bg-surface-raised border border-surface-border focus:border-indigo text-cream rounded-lg px-3.5 py-3 font-sans text-xs md:text-sm outline-none transition-colors duration-200 cursor-pointer"
               >
                 <option value="Professional & Clean">Professional & Clean</option>
                 <option value="Persuasive & Convincing">Persuasive & Convincing</option>
@@ -585,11 +585,11 @@ export default function CreatePage() {
               </select>
             </div>
             <div>
-              <label className="block font-mono text-[10px] tracking-wider uppercase text-zinc-500 mb-2">Slide Count</label>
+              <label className="block font-mono text-xs tracking-wider uppercase text-slate-300 font-semibold mb-2">Slide Count</label>
               <select
                 value={slideCount}
                 onChange={(e) => setSlideCount(parseInt(e.target.value, 10))}
-                className="w-full bg-[#0c0c0c] border border-surface-border-light focus:border-indigo text-cream rounded-[3px] px-3.5 py-3 font-sans text-xs md:text-sm outline-none transition-colors duration-200 cursor-pointer"
+                className="w-full bg-surface-raised border border-surface-border focus:border-indigo text-cream rounded-lg px-3.5 py-3 font-sans text-xs md:text-sm outline-none transition-colors duration-200 cursor-pointer"
               >
                 <option value="8">8 Slides (Short & Sweet)</option>
                 <option value="10">10 Slides (Standard Pitch)</option>
@@ -606,35 +606,36 @@ export default function CreatePage() {
           />
 
           <button
-            className={`group w-full border font-mono text-[13px] tracking-wide uppercase cursor-pointer flex items-center justify-between px-8 py-[18px] rounded-[3px] transition-all duration-250 ${
+            className={`group w-full border font-mono text-[13px] tracking-wide uppercase cursor-pointer flex items-center justify-between px-8 py-[18px] rounded-lg transition-all duration-250 ${
               (tab === "prompt" && prompt.trim()) ||
               (tab === "paste" && pasteText.trim()) ||
               (tab === "upload" && file) ||
               (tab === "url" && urlInput.trim())
-                ? "bg-cream border-cream text-[#080808] hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(232,228,220,0.12)]"
-                : "bg-[#1a1a1a] border-zinc-800 text-zinc-500"
+                ? "bg-cream border-cream text-surface font-bold hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(232,228,220,0.18)]"
+                : "bg-surface-subtle border-surface-border text-slate-500"
             }`}
             onClick={handleGenerateOutline}
           >
             <span>Generate presentation</span>
-            <span className="text-lg transition-transform duration-200 group-hover:translate-x-1">
+            <span className="text-lg transition-transform duration-200 group-hover:translate-x-1 font-bold">
               →
             </span>
           </button>
 
-          <div className="font-mono text-[10px] tracking-wider uppercase text-zinc-700 text-center mt-4">
+          <div className="font-mono text-xs tracking-wider uppercase text-slate-400 font-medium text-center mt-4">
             10–15 slides · Real images · Export-ready · No watermark
           </div>
 
           {error && (
-            <div className="mt-4 px-4 py-3 bg-red-500/5 border border-red-500/20 rounded-[3px] color-[#f87171] font-mono text-xs tracking-wide">
+            <div className="mt-4 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg text-rose-400 font-mono text-xs tracking-wide">
               {error}
             </div>
           )}
         </div>
 
-        <div className="px-8 py-10 md:py-16 bg-[#060606] md:sticky md:top-[73px] md:h-[calc(100vh-73px)] overflow-y-auto [&::-webkit-scrollbar]:w-0">
-          <div className="font-mono text-[10px] tracking-widest uppercase text-zinc-700 mb-6">
+        <div className="px-8 py-10 md:py-16 bg-surface-raised/80 border-l border-surface-border md:sticky md:top-[73px] md:h-[calc(100vh-73px)] overflow-y-auto [&::-webkit-scrollbar]:w-0">
+          <div className="font-mono text-xs tracking-widest uppercase text-slate-300 font-bold mb-6 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-indigo" />
             Choose a theme
           </div>
           <div className="grid grid-cols-2 gap-3 mb-8">
@@ -643,24 +644,25 @@ export default function CreatePage() {
               return (
                 <button
                   key={theme.id}
-                  className={`bg-transparent border rounded-[4px] p-3 cursor-pointer transition-all duration-200 relative ${
-                    isSelected ? "" : "border-surface-border-light hover:border-zinc-700"
+                  className={`bg-surface-overlay/90 border rounded-xl p-3 cursor-pointer transition-all duration-200 relative ${
+                    isSelected ? "shadow-md shadow-indigo/10" : "border-surface-border hover:border-slate-500"
                   }`}
                   onClick={() => setThemeId(theme.id)}
                   style={{
                     borderColor: isSelected ? theme.accent : undefined,
+                    borderWidth: isSelected ? 2 : 1,
                   }}
                 >
                   <div
-                    className="rounded-[3px] p-3 mb-2 h-[90px]"
+                    className="rounded-lg p-3 mb-2.5 h-[96px] shadow-sm"
                     style={{ background: theme.bg, border: `1px solid ${theme.border}` }}
                   >
                     <div
                       style={{
                         background: theme.accent,
-                        height: 2,
-                        width: "35%",
-                        borderRadius: 1,
+                        height: 3,
+                        width: "40%",
+                        borderRadius: 2,
                         marginBottom: 8,
                       }}
                     />
@@ -670,7 +672,7 @@ export default function CreatePage() {
                         height: 7,
                         width: "85%",
                         borderRadius: 2,
-                        opacity: 0.9,
+                        opacity: 0.95,
                         marginBottom: 5,
                       }}
                     />
@@ -680,7 +682,7 @@ export default function CreatePage() {
                         height: 4,
                         width: "100%",
                         borderRadius: 2,
-                        opacity: 0.3,
+                        opacity: 0.45,
                         marginBottom: 3,
                       }}
                     />
@@ -690,35 +692,21 @@ export default function CreatePage() {
                         height: 4,
                         width: "70%",
                         borderRadius: 2,
-                        opacity: 0.3,
+                        opacity: 0.45,
                         marginBottom: 10,
                       }}
                     />
-                    <div style={{ background: theme.border, height: 40, borderRadius: 3, opacity: 0.6 }} />
-                    <div style={{ marginTop: 8, display: "flex", gap: 4 }}>
-                      {[100, 70, 85].map((w, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            background: theme.text,
-                            height: 3,
-                            width: `${w / 3}px`,
-                            borderRadius: 1,
-                            opacity: 0.2,
-                          }}
-                        />
-                      ))}
-                    </div>
+                    <div style={{ background: theme.border, height: 38, borderRadius: 4, opacity: 0.7 }} />
                   </div>
                   <div
-                    className="font-mono text-[10px] tracking-wide uppercase transition-colors duration-200 text-left"
-                    style={{ color: isSelected ? theme.accent : "#52525b" }}
+                    className="font-mono text-xs tracking-wide uppercase transition-colors duration-200 text-left font-semibold"
+                    style={{ color: isSelected ? theme.accent : "#cbd5e1" }}
                   >
                     {theme.name}
                   </div>
                   {isSelected && (
                     <div
-                      className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full"
+                      className="absolute top-2 right-2 w-2 h-2 rounded-full"
                       style={{ background: theme.accent }}
                     />
                   )}
@@ -728,11 +716,11 @@ export default function CreatePage() {
           </div>
 
           <div className="border-t border-surface-border pt-6 flex items-center justify-between">
-            <div className="font-mono text-[10px] tracking-wider uppercase text-zinc-700">
-              Selected
+            <div className="font-mono text-xs tracking-wider uppercase text-slate-400 font-medium">
+              Selected Theme
             </div>
             <div
-              className="font-serif text-xl tracking-tight transition-colors duration-300"
+              className="font-serif text-2xl tracking-tight transition-colors duration-300 font-medium"
               style={{ color: THEME_LIST.find((t) => t.id === themeId)?.accent }}
             >
               {THEME_LIST.find((t) => t.id === themeId)?.name}
