@@ -6,8 +6,8 @@ import { verifyTurnstileToken } from "@/lib/security/turnstile";
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-const NVIDIA_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes for outline (smaller task)
-const NVIDIA_MAX_RETRIES = 2;
+const NVIDIA_DEFAULT_TIMEOUT_MS = 60 * 1000; // 60 seconds default
+const NVIDIA_DEFAULT_RETRIES = 1;
 
 function getOutlineSystemPrompt(audience: string, tone: string, slideCount: number) {
   return `You are a professional presentation architect.
@@ -50,18 +50,20 @@ async function callNvidiaStreaming(
   userPrompt: string,
   nvidiaKey: string,
   model: string,
+  timeoutMs: number = NVIDIA_DEFAULT_TIMEOUT_MS,
+  maxRetries: number = NVIDIA_DEFAULT_RETRIES,
 ): Promise<string> {
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt <= NVIDIA_MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     if (attempt > 0) {
       const delay = Math.min(2000 * Math.pow(2, attempt - 1), 8000);
-      console.log(`NVIDIA outline retry ${attempt}/${NVIDIA_MAX_RETRIES} after ${delay}ms…`);
+      console.log(`NVIDIA outline (${model}) retry ${attempt}/${maxRetries} after ${delay}ms…`);
       await new Promise((r) => setTimeout(r, delay));
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), NVIDIA_TIMEOUT_MS);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const res = await fetch(
@@ -88,7 +90,7 @@ async function callNvidiaStreaming(
 
       if (!res.ok) {
         const errorText = await res.text();
-        console.error(`NVIDIA outline API error (attempt ${attempt}):`, errorText);
+        console.error(`NVIDIA outline API error for ${model} (attempt ${attempt}):`, errorText);
         lastError = new Error(`NVIDIA API returned ${res.status}: ${errorText}`);
         continue;
       }
@@ -130,15 +132,15 @@ async function callNvidiaStreaming(
     } catch (err: any) {
       clearTimeout(timeout);
       if (err?.name === "AbortError") {
-        lastError = new Error("NVIDIA outline API request timed out");
+        lastError = new Error(`NVIDIA outline API request timed out (${model})`);
       } else {
         lastError = err;
       }
-      console.error(`NVIDIA outline fetch error (attempt ${attempt}):`, lastError);
+      console.error(`NVIDIA outline fetch error for ${model} (attempt ${attempt}):`, lastError);
     }
   }
 
-  throw lastError || new Error("NVIDIA outline API failed after retries");
+  throw lastError || new Error(`NVIDIA outline API failed for ${model} after retries`);
 }
 
 // ---------------------------------------------------------------------------
@@ -176,23 +178,76 @@ export async function POST(req: NextRequest) {
 
     const cleanedText = text.trim().substring(0, 5000);
     const systemPrompt = getOutlineSystemPrompt(audience, tone, slideCount);
+    const promptContent = `Create a presentation outline about:\n${cleanedText}`;
 
-    const rawKey =
-      process.env.NVIDIA_GEMMA_API_KEY ||
+    const rawKeyPrimary =
+      process.env.NVIDIA_NEMOTRON_API_KEY ||
       process.env.NVIDIA_API_KEY ||
+      process.env["NVIDIA_nemotron-3-ultra-550b-a55b_API_KEY"];
+    const rawKeyBackup =
+      process.env.NVIDIA_GEMMA_API_KEY ||
       process.env["NVIDIA_diffusiongemma-26b-a4b-it_API_KEY"];
-    if (!rawKey) {
+
+    // Resolve both keys (either may be undefined; fallback across them)
+    const anyKey = rawKeyPrimary || rawKeyBackup;
+    if (!anyKey) {
       return NextResponse.json({ error: "NVIDIA API Key not configured" }, { status: 500 });
     }
-    const nvidiaKey = rawKey.startsWith("nvapi-") ? rawKey : `nvapi-${rawKey}`;
+    const formatKey = (k: string) => k.startsWith("nvapi-") ? k : `nvapi-${k}`;
 
-    // --- Call NVIDIA with streaming + retries ---
-    const rawText = await callNvidiaStreaming(
-      systemPrompt,
-      `Create a presentation outline about:\n${cleanedText}`,
-      nvidiaKey,
-      "google/gemma-4-31b-it",
-    );
+    // Model cascade: try each model in order. First success wins.
+    const modelCascade: { model: string; key: string; timeoutMs: number; retries: number }[] = [
+      // 1. Nemotron via its own key (fastest, ~1-3s for outlines)
+      ...(rawKeyPrimary ? [{
+        model: "nvidia/nemotron-3-ultra-550b-a55b",
+        key: formatKey(rawKeyPrimary),
+        timeoutMs: 60_000,
+        retries: 1,
+      }] : []),
+      // 2. Nemotron via backup key (same model, different key — both keys work on any model)
+      ...(rawKeyBackup && rawKeyBackup !== rawKeyPrimary ? [{
+        model: "nvidia/nemotron-3-ultra-550b-a55b",
+        key: formatKey(rawKeyBackup),
+        timeoutMs: 60_000,
+        retries: 0,
+      }] : []),
+      // 3. Gemma as last resort (often congested on free tier)
+      {
+        model: "google/gemma-4-31b-it",
+        key: formatKey(anyKey),
+        timeoutMs: 120_000,
+        retries: 1,
+      },
+    ];
+
+    let rawText = "";
+    let attemptSuccess = false;
+
+    for (const { model, key, timeoutMs, retries } of modelCascade) {
+      if (attemptSuccess) break;
+      try {
+        console.log(`Attempting outline generation with model: ${model}`);
+        rawText = await callNvidiaStreaming(
+          systemPrompt,
+          promptContent,
+          key,
+          model,
+          timeoutMs,
+          retries,
+        );
+        attemptSuccess = true;
+        console.log(`Outline model ${model} succeeded!`);
+      } catch (err) {
+        console.warn(`Outline model ${model} failed. Trying next fallback...`, err);
+      }
+    }
+
+    if (!attemptSuccess) {
+      return NextResponse.json(
+        { error: "All NVIDIA models timed out. The service may be temporarily unavailable — please try again in a minute." },
+        { status: 502 }
+      );
+    }
 
     const outlineData = parseJSON(rawText);
     if (!outlineData || !Array.isArray(outlineData.slides) || outlineData.slides.length === 0) {

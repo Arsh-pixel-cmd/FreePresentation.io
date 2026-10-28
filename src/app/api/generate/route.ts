@@ -270,47 +270,61 @@ export async function POST(req: NextRequest) {
     if (!rawKeyPrimary && !rawKeyBackup) {
       return NextResponse.json({ error: "NVIDIA API Key not configured" }, { status: 500 });
     }
+    const anyKey = rawKeyPrimary || rawKeyBackup;
+    const formatKey = (k: string) => k.startsWith("nvapi-") ? k : `nvapi-${k}`;
 
     let rawText = "";
     let attemptSuccess = false;
 
-    // --- Try primary model first (with a short timeout to prevent blocking the user if it hangs) ---
-    if (rawKeyPrimary) {
-      const nvidiaKeyPrimary = rawKeyPrimary.startsWith("nvapi-") ? rawKeyPrimary : `nvapi-${rawKeyPrimary}`;
+    // Model cascade: try each model in order. First success wins.
+    const modelCascade: { model: string; key: string; timeoutMs: number; retries: number }[] = [
+      // 1. Nemotron via primary key (fast, ~2-10s for full decks)
+      ...(rawKeyPrimary ? [{
+        model: "nvidia/nemotron-3-ultra-550b-a55b" as const,
+        key: formatKey(rawKeyPrimary),
+        timeoutMs: 120_000,
+        retries: 1,
+      }] : []),
+      // 2. Nemotron via backup key (same model, different key)
+      ...(rawKeyBackup && rawKeyBackup !== rawKeyPrimary ? [{
+        model: "nvidia/nemotron-3-ultra-550b-a55b" as const,
+        key: formatKey(rawKeyBackup),
+        timeoutMs: 120_000,
+        retries: 0,
+      }] : []),
+      // 3. Gemma as last resort
+      {
+        model: "google/gemma-4-31b-it" as const,
+        key: formatKey(anyKey!),
+        timeoutMs: 300_000,
+        retries: 1,
+      },
+    ];
+
+    for (const { model, key, timeoutMs, retries } of modelCascade) {
+      if (attemptSuccess) break;
       try {
-        console.log("Attempting primary model: nvidia/nemotron-3-ultra-550b-a55b");
-        // Give the primary model 10 seconds. If it's queued or stuck, we abort and fallback immediately.
+        console.log(`Attempting slide generation with model: ${model}`);
         rawText = await callNvidiaStreaming(
           systemPrompt,
           promptContent,
-          nvidiaKeyPrimary,
-          "nvidia/nemotron-3-ultra-550b-a55b",
-          10_000,
-          0 // 0 retries on primary to minimize user wait time
+          key,
+          model,
+          timeoutMs,
+          retries,
         );
         attemptSuccess = true;
-        console.log("Primary model succeeded!");
+        console.log(`Slide generation model ${model} succeeded!`);
       } catch (err) {
-        console.warn("Primary model failed or timed out. Falling back to google/gemma-4-31b-it...", err);
+        console.warn(`Slide generation model ${model} failed. Trying next fallback...`, err);
       }
     }
 
-    // --- Fallback to backup model if primary failed ---
     if (!attemptSuccess) {
-      if (!rawKeyBackup) {
-        return NextResponse.json({ error: "Primary model failed and no backup API key configured" }, { status: 502 });
-      }
-      const nvidiaKeyBackup = rawKeyBackup.startsWith("nvapi-") ? rawKeyBackup : `nvapi-${rawKeyBackup}`;
-      console.log("Attempting backup model: google/gemma-4-31b-it");
-      rawText = await callNvidiaStreaming(
-        systemPrompt,
-        promptContent,
-        nvidiaKeyBackup,
-        "google/gemma-4-31b-it",
-        300_000, // 5 minutes timeout for full slide deck generation
-        2 // 2 retries
+      return NextResponse.json(
+        { error: "All NVIDIA models timed out. The service may be temporarily unavailable — please try again in a minute." },
+        { status: 502 }
       );
-      console.log("Backup model succeeded!");
     }
 
     const slideData = parseJSON(rawText);
