@@ -439,16 +439,17 @@ export async function POST(req: NextRequest) {
             line: { color: theme.border.replace("#", ""), width: 1 },
           });
 
-          // Big Stat Value
+          // Big Stat Value (auto-shrinks if long)
           s.addText(stat.value, {
             x: colX,
             y: 2.5,
             w: 2.6,
             h: 1.0,
-            fontSize: 36,
+            fontSize: 32,
             bold: true,
             color: theme.accent.replace("#", ""),
             fontFace: "Georgia",
+            shrinkText: true,
           });
 
           // Stat Label
@@ -456,11 +457,12 @@ export async function POST(req: NextRequest) {
             x: colX,
             y: 3.6,
             w: 2.6,
-            h: 0.6,
-            fontSize: 10,
+            h: 0.8,
+            fontSize: 9,
             color: theme.muted.replace("#", ""),
             fontFace: "Courier New",
             charSpacing: 1.5,
+            shrinkText: true,
           });
         });
 
