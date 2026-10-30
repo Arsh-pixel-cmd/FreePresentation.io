@@ -4,7 +4,7 @@
 
 Build beautiful, export-ready presentations from a topic, a PDF upload, or pasted notes — in under 30 seconds.
 
-> **Live:** [freepresentation.io](https://freepresentation.io)
+> **Live:** [freepresentation.io](https://free-presentation-io.vercel.app)
 
 ---
 
